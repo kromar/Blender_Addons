@@ -238,8 +238,8 @@ def generate_TetMesh():
     '''
     #compute mesh
     compute_vertices(ob, meshPoints)
-    compute_polygones(ob, meshFacets)
-    #compute_faces(ob, meshFacets)
+    #compute_polygones(ob, meshFacets)
+    compute_faces(ob, meshFacets)
     
     if config.make_subdivision == False:
         arg = "Y"
