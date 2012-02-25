@@ -123,7 +123,7 @@ MeshSlicer:
     
 "version": (1, 0, 3)
     - replaced faces with polygons to make compatible with bmesh
-    
+    - check for faces to make it work in bmesh and release version
 '''
 
 
@@ -238,7 +238,6 @@ def generate_TetMesh():
     '''
     #compute mesh
     compute_vertices(ob, meshPoints)
-    #compute_polygones(ob, meshFacets)
     compute_faces(ob, meshFacets)
     
     if config.make_subdivision == False:
@@ -357,18 +356,14 @@ def compute_mesh_split(tetmesh, split_faceList, split_vertList, vertList):
 
         
 #using polygones instead of faces for bmesh
-def compute_polygones(ob, list):
-    for p in polygons:
-        list.append(p.vertices[:])
-    
-    print("meshFacets: ", list)     
-    if debug == True:
-        print("meshFacets: ", list) 
-        
 def compute_faces(ob, list):
-    for p in ob.data.faces:
-        list.append(p.vertices[:])
-        
+    if ob.data.faces:
+        for p in ob.data.faces:
+            list.append(p.vertices[:])
+    else:
+        for p in ob.data.polygons:
+            list.append(p.vertices[:])
+    
     if debug == True:
         print("meshFacets: ", list)    
     
