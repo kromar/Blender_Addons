@@ -124,6 +124,14 @@ MeshSlicer:
 "version": (1, 0, 3)
     - replaced faces with polygons to make compatible with bmesh
     - check for faces to make it work in bmesh and release version
+    - added warning message in addons that meshpy modules are required (might not even show when they are missing)
+
+"version": (1, 0, 3)
+    - removed old face check
+    
+"version": (1, 1, 0)
+
+
 '''
 
 
@@ -131,6 +139,7 @@ MeshSlicer:
 #                                                                 
 #======================================================================# 
 import bpy
+import bmesh
 import math
 import mathutils
 from meshpy.tet import MeshInfo, build, Options
@@ -138,12 +147,12 @@ from meshpy.tet import MeshInfo, build, Options
 bl_info = {
     "name": "MeshPy",
     "author": "Daniel Grauer (kromar)",
-    "version": (1, 0, 3),
-    "blender": (2, 6, 2),
+    "version": (1, 1, 0),
+    "blender": (2, 6, 3),
     "category": "Mesh",
     "location": "Properties space > Data > MeshPy",
     "description": "Quality triangular and tetrahedral mesh generation",
-    "warning": '', # used for warning icon and text in addons panel
+    "warning": "MeshPy modules are required!", # used for warning icon and text in addons panel
     "wiki_url": "",
     "tracker_url": ""}
 
@@ -161,6 +170,7 @@ bl_info = {
 
 tetras = 0
 debug = False
+
 def generate_Preview():
     config = bpy.data.scenes[0].CONFIG_MeshPy
     
@@ -252,7 +262,7 @@ def generate_TetMesh():
     args = (debugArg + "pq" + str(config.ratio_quality) + "a" + str(config.ratio_maxsize) + str(arg))
     #args = ("o2" + str(arg))
     tetmesh = build(mesh_info, Options(args), 
-            verbose = debug,
+            verbose = False,
             attributes = False, 
             volume_constraints = False, 
             max_volume = None,
@@ -357,12 +367,8 @@ def compute_mesh_split(tetmesh, split_faceList, split_vertList, vertList):
         
 #using polygones instead of faces for bmesh
 def compute_faces(ob, list):
-    if ob.data.faces:
-        for p in ob.data.faces:
-            list.append(p.vertices[:])
-    else:
-        for p in ob.data.polygons:
-            list.append(p.vertices[:])
+    for p in ob.data.polygons:
+        list.append(p.vertices[:])
     
     if debug == True:
         print("meshFacets: ", list)    
@@ -610,7 +616,7 @@ class OBJECT_PT_MeshPy(bpy.types.Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "data"
-    bl_default_closed = False
+    bl_default_closed = True
     
     def draw(self, context):
     
