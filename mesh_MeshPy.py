@@ -20,8 +20,10 @@
 #                                                              
 #======================================================================#
 # ***** Credits *****
+# thanks to Andreas Klöckner for MeshPy
+#   http://mathema.tician.de/software/meshpy
 
-#
+# thanks to scorpin81 (irc#pythonblender) for linux lib compiling
 
 #======================================================================# 
 #    todo:                                                          
@@ -126,10 +128,11 @@ MeshSlicer:
     - check for faces to make it work in bmesh and release version
     - added warning message in addons that meshpy modules are required (might not even show when they are missing)
 
-"version": (1, 0, 3)
+"version": (1, 0, 4)
     - removed old face check
     
 "version": (1, 1, 0)
+    - added linux module
 
 
 '''

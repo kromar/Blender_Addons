@@ -1,0 +1,131 @@
+MeshPy Addon for Blender
+
+#======================================================================# 
+# ***** Credits *****                                                    
+#======================================================================#
+
+# thanks to Andreas Klöckner for MeshPy
+#   http://mathema.tician.de/software/meshpy
+
+# thanks to scorpin81 (irc#pythonblender) for linux lib compiling
+
+
+
+#======================================================================# 
+#     installation                                                         
+#======================================================================#
+
+-  copy mesh_MeshPy.py      ----->      blender\#version\addons\
+-  copy \modules\meshpy_OS  ----->      blender\#version\modules\   AND RENAME THE FOLDER TO meshpy
+
+
+#======================================================================# 
+#    todo:                                                          
+#======================================================================#
+'''
+
+MeshPy:
+- voronoi: 
+    -no its not in, but if you have delauney triangulation, 
+    you can get voronoi by connecting the triangle's 
+    outer circles midpoints together (at least in 2d)
+   
+   - New output of Voronoi diagrams. The Voronoi diagram is the geometric dual of the Delaunay triangulation.
+    By using the '-v' option, the Voronoi diagram will be saved in files: 
+    .v.node, .v.edge, .v.face, and .v.cell.
+- For an example, the string '-q1.4q10' sets both a radius-edge ratio (<= 1.4) 
+    and a minimum dihedral angle (>= 10 degree) as the tetrahedral shape quality measure
+    
+- set softbody to split meshes
+    - set collision to splits?
+
+- add tetra amount preview option (skipp mesh calculations and just add tetamount to gui)
+
+- add splits to new group
+- copy material from source object
+
+- custom name for new tetras 
+- human readable tooltips
+- reset button resetting slider? separate reset for sliders?
+
+switches 
+    - check intersection in meshes with -d switch
+    - o2 switch     
+    (TetGen generates meshes with quadratic elements if the -o2 switch is specified. 
+    Quadratic elements have ten nodes per element, rather than four. 
+    The six extra nodes of a tetrahedron fall at the midpoints of its six edges)
+    - C switch  to check the consistency of the mesh on finish.
+    '-CC', TetGen also checks constrained Delaunay (for -p switch) or conforming Delaunay (for -q, -a, or -i) property for the mesh.
+    - h switch for help output
+- multiple intersecting meshes causes crash
+- modifing a mesh crashes blender; find reason
+- convert quality value to percentage, at the moment its inversed logic which is not user friendly
+
+- monkey can not be generated, find reason
+    Internal error in finddirectionsub():  Unable to find a subface leading from 73 to 97.
+      Please report this bug to sihang@mail.berlios.de. Include the message above, your input data set, and the exact command line you used to run this program, thank you.
+    Traceback (most recent call last):
+      File "F:\BlenderSVN\cmake-blender\bin\Release\2.61\scripts\addons_contrib\mesh_MeshPy.py", line 423, in execute
+- mesh output files?
+      
+MeshSlicer:
+- cant hide vertices directly in edit mode which causes huge performance hit:(
+    we have to switch back and forth to modes for every update.....
+'''
+
+
+#======================================================================# 
+#     changelog                                                         
+#======================================================================#
+'''
+"version": (1, 0, 0)
+    -turned into addon
+    - removed double function callable
+    - renamed some functions
+    - added gui sliders 
+    - added gui button to manually slice (can be removed if performance can slice in realtime)
+    - sliders and slicing now works via interface
+    - fixed minimum slice percentage from 1 to 0
+    - removed slice planes (not improving visuals)
+    - moved reset to bounding box calculations
+    - scale and rotation getting applied on reset (create gui option for this, should be optional)
+    - added options to apply scale and rotation to mesh before slicing
+    - added second slicer to slice from 2 sides
+    - added sliders for 2nd slicer
+    - GUI recognizes if type is no mesh
+    - added button to reset mesh to working condition
+    - marked performance hogs
+    - eliminated some performance hogs, cant get rid of switching form object to edit mode and back:(
+    - added workaround for quad/tris array problem
+    - removed tris convertion of mesh
+    - new mesh is set to active
+    - source mesh rotation will be applied to generated mesh
+    - fixed origin problem if make active was False
+    - naming cleanup
+    - fixed reset button
+    - generate tet now works out of edit mode
+
+"version": (1, 0, 1)
+    - option to generate each tetra as separate object
+    - checkbox for split
+    - added softbody option to splits
+    - disabled softbody goal
+    - increased push slightly so the tets dont collapse
+    - added option to enable/disabel goal on softbody tets
+    
+"version": (1, 0, 2)
+    - added option for game physics
+    - code clean up
+    
+"version": (1, 0, 3)
+    - replaced faces with polygons to make compatible with bmesh
+    - check for faces to make it work in bmesh and release version
+    - added warning message in addons that meshpy modules are required (might not even show when they are missing)
+
+"version": (1, 0, 4)
+    - removed old face check
+    
+"version": (1, 1, 0)
+    - added linux module
+
+
