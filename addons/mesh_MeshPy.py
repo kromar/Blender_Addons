@@ -153,6 +153,7 @@ bl_info = {
     "version": (1, 1, 0),
     "blender": (2, 6, 3),
     "category": "Mesh",
+    "category": "kromar",
     "location": "Properties space > Data > MeshPy",
     "description": "Quality triangular and tetrahedral mesh generation",
     "warning": "MeshPy modules are required!", # used for warning icon and text in addons panel
