@@ -20,9 +20,13 @@
 
 """
 todo:
-    - enable vertex select mode when switching to edit mode
+    - 
 
 changelog:
+    "version": (1, 1, 2),
+        - enable vertex, face and edge select mode when switching to edit mode
+        - check if index input is empty or number to evade errors
+        
     "version": (1, 1, 1),
         - added face and edge selection
         
@@ -40,7 +44,7 @@ import bpy
 bl_info = {
     "name": "Index Marker",
     "author": "Daniel Grauer (kromar)",
-    "version": (1, 1, 1),
+    "version": (1, 1, 2),
     "blender": (2, 6, 3),
     "category": "Mesh",
     "category": "kromar",
@@ -65,6 +69,7 @@ def IM_select(indexList,type):
     bpy.ops.object.mode_set(mode = 'OBJECT', toggle = False)
    
     if type == 'vertex':
+        bpy.context.scene.tool_settings.mesh_select_mode = (True, False, False)    
         for vert in mesh.vertices:
             #print(vert.index)
             for target in indexList:
@@ -73,6 +78,7 @@ def IM_select(indexList,type):
                     print(target, ' vertex selected')   
                     
     if type == 'face':
+        bpy.context.scene.tool_settings.mesh_select_mode = (False, False, True)
         for face in mesh.polygons:
             #print(face.index)
             for target in indexList:
@@ -81,6 +87,7 @@ def IM_select(indexList,type):
                     print(target, ' face selected') 
                     
     if type == 'edge':
+        bpy.context.scene.tool_settings.mesh_select_mode = (False, True, False)
         for edge in mesh.edges:
             #print(edge.index)
             for target in indexList:
@@ -90,15 +97,17 @@ def IM_select(indexList,type):
             
     
     bpy.ops.object.mode_set(mode = 'EDIT', toggle = False)
+    #bpy.context.scene.tool_settings.mesh_select_mode = (True, True, True)
+
 
 def IM_show_extra_indices(self, context):
     mesh =  bpy.context.active_object.data 
     config = bpy.data.scenes[0].CONFIG_IndexMarker
     print("Show indices: ", config.show_extra_indices)
     
+    #enable debug mode, show indices
+    #bpy.app.debug  to True while blender is running
     if config.show_extra_indices == True:
-        #enable debug mode, show indices
-        #bpy.app.debug  to True while blender is running
         bpy.app.debug = True
         mesh.show_extra_indices = True
     else:
@@ -147,7 +156,12 @@ class OBJECT_PT_IndexMarker(bpy.types.Panel):
             row.operator("mesh.face_select", text="faces")
             row.operator("mesh.edge_select", text="edges")
 
-            
+
+#======================================================================# 
+#         oeprators                                                      
+#======================================================================#
+   
+        
 class OBJECT_OP_SelectVertices(bpy.types.Operator):
     bl_idname = "mesh.vertex_select"
     bl_label = "Select vertex"
@@ -161,7 +175,11 @@ class OBJECT_OP_SelectVertices(bpy.types.Operator):
         indexList=[]
         detectList = config.get_indices.split(',')
         for i in detectList:
-            indexList.append(int(i))
+            if i and i.isdigit():
+                indexList.append(int(i))
+            else:
+                print("missing or wrong input")
+                break
             
         #print(indexList)
         type='vertex'
@@ -181,7 +199,11 @@ class OBJECT_OP_SelectFaces(bpy.types.Operator):
         indexList=[]
         detectList = config.get_indices.split(',')
         for i in detectList:
-            indexList.append(int(i))
+            if i and i.isdigit():
+                indexList.append(int(i))
+            else:
+                print("missing or wrong input")
+                break
             
         #print(indexList)
         type='face'
@@ -201,7 +223,11 @@ class OBJECT_OP_SelectEdges(bpy.types.Operator):
         indexList=[]
         detectList = config.get_indices.split(',')
         for i in detectList:
-            indexList.append(int(i))
+            if i and i.isdigit():
+                indexList.append(int(i))
+            else:
+                print("missing or wrong input")
+                break
             
         #print(indexList)
         type='edge'
