@@ -20,7 +20,7 @@
 
 """
 todo:
-    - 
+    - filter out empty and letters input
 
 changelog:
     "version": (1, 1, 2),
