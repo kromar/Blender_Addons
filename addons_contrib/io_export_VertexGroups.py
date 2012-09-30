@@ -16,18 +16,20 @@
 #
 # ***** END GPL LICENCE BLOCK *****
 
-# ----------------------------------------------------------------------------#
+#======================================================================# 
+#         todo                                                      
+#======================================================================#   
+ 
+'''
+ - add submenu in export list for type exports
 
 '''
-todo:
-    - add submenu in export list for type exports
 
-bugs:
-    - 
+#======================================================================# 
+#         changelog                                                    
+#======================================================================#   
 
-changelog:
-
-    
+'''    
 "version": 1.1    
     fixed:         filepath
     added:         folder selection for multiple objects
@@ -49,10 +51,13 @@ changelog:
     
 "version": (1,2,3),
     - fixed multiple export
+    
+"version": (1,2,4),
+    - added function to detect subsurface and multires modifiers (not applied yet)
+    
 '''
 
-# ----------------------------------------------------------------------------#
-
+  
 import bpy
 from os.path import *
 from bpy.props import *
@@ -62,7 +67,7 @@ from xml.dom.minidom import Document
 bl_info = {
     "name": "Export: Vertex Groups",
     "author": "Daniel Grauer",
-    "version": (1, 2, 3),
+    "version": (1, 2, 4),
     "blender": (2, 6, 0),
     "category": "Import-Export",
     "category": "kromar",
@@ -91,7 +96,20 @@ def save_VertexGroup(filepath, amount):
         print(" ")
 
 # ----------------------------------------------------------------------------#
-     
+def modifier_Check():
+    for modifier in bpy.context.object.modifiers:
+        if (modifier.type == 'SUBSURF' or modifier.type=='MULTIRES') and modifier.show_viewport==True:
+            print("detected modifiers that change topology!")
+            print(modifier.name, "modifier: ", modifier.show_viewport)
+            
+            bpy.ops.object.convert(target='MESH', keep_original=True)
+            
+        
+        else:
+            print("no modifiers that change topology detected")
+            print(modifier.name, modifier.type, "modifier: ", modifier.show_viewport)
+            
+            
 #objects can be passed to this function
 def export_VertexGroup(object_name, filepath, amount, export_name):
     
