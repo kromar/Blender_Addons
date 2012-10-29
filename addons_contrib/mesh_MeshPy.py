@@ -266,12 +266,12 @@ def generate_TetMesh():
     args = (debugArg + "pq" + str(config.ratio_quality) + "a" + str(config.ratio_maxsize) + str(arg))
     #args = ("o2" + str(arg))
     tetmesh = build(mesh_info, Options(args), 
-            verbose = False,
+            verbose = True,
             attributes = False, 
-            volume_constraints = False, 
-            max_volume = None,
+            volume_constraints = False,
+            max_volume = None,          
             diagnose = False, 
-            insert_points = True)
+            insert_points = None)
             
     compute_mesh(tetmesh, vertList, faceList)   
     
@@ -587,7 +587,7 @@ class UIElements(bpy.types.PropertyGroup):
     make_game = bpy.props.BoolProperty(name="Game Physics", default=False, description="new tetras will become game objects") 
     
     #tetgen sliders
-    ratio_quality = bpy.props.FloatProperty(name="quality", subtype='FACTOR', min=1.10, max=5.00, default=5.00, step=0.01, description="")
+    ratio_quality = bpy.props.FloatProperty(name="quality", subtype='FACTOR', min=1.01, max=2.5, default=2.0, step=0.01, description="")
     ratio_maxsize = bpy.props.FloatProperty(name="max size", subtype='NONE', min=0.000001, max=10.000000, default=5.000000, step=0.01, description="")
     
     #tetgen dropdown
