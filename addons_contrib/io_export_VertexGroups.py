@@ -52,8 +52,9 @@
 "version": (1,2,3),
     - fixed multiple export
     
-"version": (1,2,4),
-    - added function to detect subsurface and multires modifiers (not applied yet)
+"version": (1,2,5),
+    - option to apply modifiers before writing mesh data.
+        this should fix different vertex counts in mesh and label file
     
 '''
 
@@ -67,7 +68,7 @@ from xml.dom.minidom import Document
 bl_info = {
     "name": "Export: Vertex Groups",
     "author": "Daniel Grauer",
-    "version": (1, 2, 4),
+    "version": (1, 2, 5),
     "blender": (2, 6, 0),
     "category": "Import-Export",
     "category": "kromar",
@@ -96,19 +97,6 @@ def save_VertexGroup(filepath, amount):
         print(" ")
 
 # ----------------------------------------------------------------------------#
-def modifier_Check():
-    for modifier in bpy.context.object.modifiers:
-        if (modifier.type == 'SUBSURF' or modifier.type=='MULTIRES') and modifier.show_viewport==True:
-            print("detected modifiers that change topology!")
-            print(modifier.name, "modifier: ", modifier.show_viewport)
-            
-            bpy.ops.object.convert(target='MESH', keep_original=True)
-            
-        
-        else:
-            print("no modifiers that change topology detected")
-            print(modifier.name, modifier.type, "modifier: ", modifier.show_viewport)
-            
             
 #objects can be passed to this function
 def export_VertexGroup(object_name, filepath, amount, export_name):
@@ -122,10 +110,15 @@ def export_VertexGroup(object_name, filepath, amount, export_name):
         
 def process_mesh(object_name, filepath, export_name):  
     object = bpy.data.objects[object_name]
+    #apply modifiers to object data
+    scene = bpy.context.scene  
+    apply_modifiers = True
+    mesh = objectApplyModifiers(scene, object, apply_modifiers)
     
     #create document structure
     doc = Document()
-    rootElement = doc.createElement("Group")
+    #rootElement = doc.createElement("group")
+    rootElement = doc.createElement("virtamed")
     doc.appendChild(rootElement)
     vertGroupElem = doc.createElement("VertexLabels")
     rootElement.appendChild(vertGroupElem)
@@ -146,7 +139,7 @@ def process_mesh(object_name, filepath, export_name):
         verticesText = ""
         weightText = ""
         #get the verts
-        for vert in object.data.vertices:
+        for vert in mesh.vertices:
             #print(vert.index)
             for g in vert.groups:    #vertex groups of vertices
                 #print(g.group)
@@ -180,6 +173,23 @@ def process_mesh(object_name, filepath, export_name):
         print("Saving file to:", filepath)
         f.write(doc.toprettyxml(indent="   "))
         f.close()    
+        
+# ----------------------------------------------------------------------------#
+
+#check mesh for modifiers and apply to new ob.data and use that for exporting
+def objectApplyModifiers(scene, ob, apply_modifiers):  
+    mesh = ob.data
+    for modifier in ob.modifiers:
+        #we only want visible modifiers to be processed
+        if modifier.show_viewport==True:
+            print("detected modifiers, will apply before exporting")
+            print(modifier.type, "modifier: ", modifier.show_viewport)           
+            mesh = ob.to_mesh(scene, apply_modifiers, 'RENDER')       
+            #mesh = ob.to_mesh(scene, apply_modifiers, 'PREVIEW')
+            print(mesh)
+        
+    return mesh  
+         
 # ----------------------------------------------------------------------------#
 
 class VertexGroupExporter(bpy.types.Operator):
