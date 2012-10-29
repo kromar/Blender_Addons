@@ -94,7 +94,7 @@ bl_info = {
 
 print(" ")
 print("*------------------------------------------------------------------------------*")
-print("*                          initializing BacthObj export                        *")
+print("*                          BacthObj export                        *")
 print(" ")
 
 ArthrosModel = dict(check_existing = True,
@@ -259,7 +259,7 @@ def export_clean(mesh, filepath, sim_type, amount, export_name):
     GhostList =[]
     
     for uvmap in mesh.uv_textures:
-        print("UVMap: ", uvmap.name)
+        #print("UVMap: ", uvmap.name)
         
         for face in uvmap.data:
             image = face.image
@@ -271,7 +271,8 @@ def export_clean(mesh, filepath, sim_type, amount, export_name):
                 face.image = None
                 #print(image.name , "texture removed from: ", uvmap.name)
             else:
-                print(mesh, ": no image to wipe")
+                #print(mesh, ": no image to wipe")
+                pass
           
     
     print("uv textures wiped")

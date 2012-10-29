@@ -66,7 +66,7 @@ bl_info = {
 
 print(" ")
 print("*------------------------------------------------------------------------------*")
-print("*                          TetMesh import                         *")
+print("*                          TetMesh import                                      *")
 print(" ")
         
 def import_tetmesh(self, context, filepath, filename):

@@ -50,7 +50,7 @@ bl_info = {
 
 print(" ")
 print("*------------------------------------------------------------------------------*")
-print("*						  initializing ObjBatch import						*")
+print("*						 ObjBatch import						  			  *")
 print(" ")
 
 #extension filter (alternative use mimetypes)
@@ -106,7 +106,8 @@ def unregister():
 if __name__ == "__main__":
 	register()
 
+
 print(" ")
-print("*						  initialized						*")
+print("*                             initialized                                      *")
 print("*------------------------------------------------------------------------------*")
 print(" ")
