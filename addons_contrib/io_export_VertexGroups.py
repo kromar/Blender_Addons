@@ -118,7 +118,7 @@ def process_mesh(object_name, filepath, export_name):
     #create document structure
     doc = Document()
     #rootElement = doc.createElement("group")
-    rootElement = doc.createElement("virtamed")
+    rootElement = doc.createElement("group")
     doc.appendChild(rootElement)
     vertGroupElem = doc.createElement("VertexLabels")
     rootElement.appendChild(vertGroupElem)
