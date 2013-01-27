@@ -30,7 +30,7 @@ TODO:
 
 import bpy
 import bmesh
-import time
+#import time
  
 #addon description
 bl_info = {
@@ -52,9 +52,13 @@ print("*------------------------------------------------------------------------
 print("*                          initializing average vertex weights                 *")
 print(" ")
 ''' 
+
 ob = bpy.context.object
+mesh = ob.data        
 scene = bpy.context.scene  
-apply_modifiers = True
+
+activeVG = ob.vertex_groups.active
+apply_modifiers = True     
 '''   
 '''---------------------------
 # this function can be used to apply after modifiers
@@ -71,14 +75,23 @@ def objectApplyModifiers(scene, ob, apply_modifiers):
             print(mesh)
         
     return mesh  
+    
 
-def selectedVG():
-    pass
+def selectedVG(self, context):
+    mesh =  bpy.context.active_object.data 
+    config = bpy.data.scenes[0].CONFIG_AverageWeights
+    print("selected group: ", config.selected_group)
+   
+    if config.selected_group == True:
+        mesh.selected_group = True
+    else:
+        mesh.selected_group = False
+
     
 def enableModifiers(self, context):
     mesh =  bpy.context.active_object.data 
     config = bpy.data.scenes[0].CONFIG_AverageWeights
-    print("Show indices: ", config.modifiers_enabled)
+    print("modifier enabled: ", config.modifiers_enabled)
     
     #enable debug mode, show indices
     #bpy.app.debug  to True while blender is running
@@ -97,7 +110,7 @@ def enableModifiers(self, context):
 #mesh = ob.data
 #activeVG = ob.vertex_groups.active
 
-print("active group: ", activeVG.name, "index: ", activeVG.index)
+#print("active group: ", activeVG.name, "index: ", activeVG.index)
 
                 
 '''---------------------------
@@ -236,15 +249,11 @@ wipe list with  del l[:]
 #         GUI                                                      
 #======================================================================#        
 class UIElements(bpy.types.PropertyGroup):
-    pass
-    #text input
-    #get_indices = bpy.props.StringProperty(name="index:", description="input vertex, face or edge indices here for selection. example: 1,2,3")
-    #checkbox
     modifiers_enabled = bpy.props.BoolProperty(name="enable modifiers", default=False, description="apply modifiers before calculating weights", update= enableModifiers)
     selected_group = bpy.props.BoolProperty(name="selected VG only", default=True, description="only calculate weights from selected vertex group", update= selectedVG)
     slider_iterations = bpy.props.IntProperty(name="iterations", subtype='NONE', min=1, max=1000, default=10, step=1, description="iterations")
     
-	
+    
 class OBJECT_PT_AverageWeights(bpy.types.Panel):
     bl_label = "AverageWeights"
     bl_idname = "OBJECT_PT_AverageWeights"
@@ -298,12 +307,12 @@ def compute():
     lockedList = []
     vertexList = []  
     for i in range(max):            
-        time0 = time.time()
+        #time0 = time.time()
         if i == 0:             
             populateLists()                      
         print("iterration:", i)
         averageWeights()
-        print("iteration time:", time.time() - time0)              
+        #print("iteration time:", time.time() - time0)              
         if i == max-1:
             assignVertexWeights() 
         i = i + 1   
