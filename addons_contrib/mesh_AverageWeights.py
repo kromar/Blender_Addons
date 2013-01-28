@@ -24,13 +24,28 @@ TODO:
     
     - include locked vertices
     - make init on every new group
----------------------------'''  
+    
+    - check where we spend so much time
+    
+    
+#    mesuring time
+time1 = time.time()
+for x in search:
+    method1(x)
+print(time.time() - time1)
 
 
+
+#    fastest wipe list:
+del l[:]
+
+
+---------------------------'''    
 
 import bpy
 import bmesh
-#import time
+import time
+import mathutils
  
 #addon description
 bl_info = {
@@ -49,20 +64,12 @@ bl_info = {
 
 print(" ")
 print("*------------------------------------------------------------------------------*")
-print("*                          initializing average vertex weights                 *")
-print(" ")
-''' 
+print("*                          Average Weights                                     *")
+print(" ") 
 
-ob = bpy.context.object
-mesh = ob.data        
-scene = bpy.context.scene  
+lockedList = []
+vertexList = []  
 
-activeVG = ob.vertex_groups.active
-apply_modifiers = True     
-'''   
-'''---------------------------
-# this function can be used to apply after modifiers
----------------------------'''  
 def objectApplyModifiers(scene, ob, apply_modifiers):  
     mesh = ob.data
     for modifier in ob.modifiers:
@@ -72,11 +79,10 @@ def objectApplyModifiers(scene, ob, apply_modifiers):
             print(modifier.type, "modifier: ", modifier.show_viewport)           
             mesh = ob.to_mesh(scene, apply_modifiers, 'RENDER')       
             #mesh = ob.to_mesh(scene, apply_modifiers, 'PREVIEW')
-            print(mesh)
-        
+            print(mesh)        
     return mesh  
-    
 
+'''---------------------------'''  
 def selectedVG(self, context):
     mesh =  bpy.context.active_object.data 
     config = bpy.data.scenes[0].CONFIG_AverageWeights
@@ -88,6 +94,7 @@ def selectedVG(self, context):
         mesh.selected_group = False
 
     
+'''---------------------------'''  
 def enableModifiers(self, context):
     mesh =  bpy.context.active_object.data 
     config = bpy.data.scenes[0].CONFIG_AverageWeights
@@ -96,15 +103,23 @@ def enableModifiers(self, context):
     #enable debug mode, show indices
     #bpy.app.debug  to True while blender is running
     if config.modifiers_enabled == True:
-        bpy.app.debug = True
         mesh.modifiers_enabled = True
     else:
-        mesh = ob.data
-        mesh.modifiers_enabled = False
-        
+        mesh.modifiers_enabled = False        
     return mesh
         
-        
+'''---------------------------'''  
+def vertexDistance(self, context):
+    mesh =  bpy.context.active_object.data 
+    config = bpy.data.scenes[0].CONFIG_AverageWeights
+    print("vertexDistance enabled: ", config.vertex_distance)
+    
+    #enable debug mode, show indices
+    #bpy.app.debug  to True while blender is running
+    if config.vertex_distance == True:
+        mesh.vertex_distance = True
+    else:
+        mesh.vertex_distance = False   
         
 #mesh = objectApplyModifiers(scene, ob, apply_modifiers)
 #mesh = ob.data
@@ -115,10 +130,9 @@ def enableModifiers(self, context):
                 
 '''---------------------------
 # check if vertex is in active group
----------------------------'''  
- 
-   
-def populateLists():       
+---------------------------'''      
+def populateLists(ob, mesh):   
+    activeVG = ob.vertex_groups.active    
     #add vertices from vertex group in our list
     if activeVG.name in ob.vertex_groups:                    
         #check if vertex is in our group  
@@ -147,18 +161,16 @@ def populateLists():
 
 
 '''---------------------------
-# border verts
----------------------------'''  
-def getBorderVerts(vertex, bm):     
-         
-    bmvert = bm.verts[vertex.index]    
-    borderVerts = []
-    
+# get border verts
+---------------------------'''   
+def getBorderVerts(vertex, bm):      
+    bmvert = bm.verts[vertex] 
+    borderVerts = []  
+        
     for loop in bmvert.link_loops:
-        borderVerts.append(loop.edge.other_vert(bmvert).index)
-    
-    return borderVerts, len(borderVerts)
- 
+        vec = mathutils.Vector(bmvert.co - loop.edge.other_vert(bmvert).co)     
+        borderVerts.append(loop.edge.other_vert(bmvert).index)    
+    return borderVerts, len(borderVerts), vec.length
 
  
 '''---------------------------
@@ -167,32 +179,82 @@ def getBorderVerts(vertex, bm):
         -loop over each vert, check if it is locked in our vertexList 
         -calculate sum
         -write new value to our vertexList
+
+time mesured in this function:     (iteration time: 0.54003)
+    0.53003
+
+
 ---------------------------'''  
 
-def averageWeights(): 
+def averageWeights(ob, mesh): 
+    takeTIME = time.time()  
     #we need to be in edit mode to loop
     if not ob.mode == 'EDIT':
         bpy.ops.object.mode_set(mode = 'EDIT', toggle = False)
+        print("set to edit mode for bmesh looping")        
+       
+    bm = bmesh.from_edit_mesh(mesh)    
+                
+    for v in vertexList:    #we go through all the vertices??? do we need this? 
+        #print("v", v)
+        #get those neighbour vertices  
+        vIndex = v[0][0]      
+        borderVerts, count, distance = getBorderVerts(vIndex, bm) #we only need vertex index for this function         
+       
+        # get average weight from border verts
+        sumBorderWeights=0 
+        
+        #just add up border weights and assing to active vertex
+        for i in borderVerts:
+            #now add up the weights of these
+            weight = vertexList[i][1][0]
+            #print("borders", i, weight)
+            #print(weight)
+            sumBorderWeights = sumBorderWeights + weight
+        
+        avg = (sumBorderWeights / count) #add distance to this formula   
+        if sumBorderWeights>0:  
+            #print("avg:", avg)
+            #print(verts.index, "sum:", sum,  "   count:", count,"    avg:",avg)   
+            #print("lockedList: ", lockedList) 
+            #print(vIndex)   
+            if not vIndex in lockedList:
+                #print("ROOT: ", verts.index, "children: ", borderVerts)
+                #print("unlocked: ", verts.index)
+                #print("before:", vertexList[vIndex][1][0], avg)
+                vertexList[vIndex][1][0] = avg     #this creates doubles!! we dont want that             
+                #print("after:", vertexList)      
+    print("takeTIME:", time.time() - takeTIME) 
+    
+    
+def averageWeights_OLD(ob, mesh): 
+    takeTIME = time.time()  
+    #we need to be in edit mode to loop
+    if not ob.mode == 'EDIT':
+        bpy.ops.object.mode_set(mode = 'EDIT', toggle = False)
+        print("set to edit mode for bmesh looping")
         
     bm = bmesh.from_edit_mesh(mesh)
-
-    for verts in mesh.vertices:    
+   
+    
+    for verts in mesh.vertices:     # we should be able to remove this since we use our own vertex list?
         sum=0      
         #get those neighbour vertices
-        borderVerts,count = getBorderVerts(verts, bm)
+        borderVerts,count = getBorderVerts(verts, bm) #we only need vertex index for this function
+        #compare border verts with list and average weights   
+        #'''
         
-        #compare border verts with list and average weights    
-        for i in borderVerts:                
-            for v in vertexList:
+        for i in borderVerts:   #we go through all border verts            
+            for v in vertexList:    #we go through all the vertices??? do we need this?
                 #print(v[0][0])                
-                if i in v[0]:                    
+                if i in v[0]:       # we check if border is in vertex list             
                     #print(i,  "in our list")
                     #print("weights: ",v[1][0])
                     sum = sum + v[1][0]
         
-        avg = (sum / count)   #we need to check if vertex is locked and adjust count  
+        avg = (sum / count) #add distance to this formula       
         
-        if sum>0: 
+        if sum>0:
             #print(verts.index, "sum:", sum,  "   count:", count,"    avg:",avg)   
             #print("lockedList: ", lockedList)
     
@@ -204,15 +266,17 @@ def averageWeights():
                 #print("after:", vertexList)                     
                 #print("------------------")   
                         
-
+        
+    print("takeTIME:", time.time() - takeTIME) 
+    
+    
 '''---------------------------
 # assign our vertex weights to a new vertex group
 ---------------------------'''  
-
-def assignVertexWeights():   
+def assignVertexWeights(ob, mesh):   
     bpy.ops.object.mode_set(mode = 'OBJECT', toggle = False)       
-    vg = ob.vertex_groups.new(name="ALL")
-    for verts in mesh.vertices:
+    vg = ob.vertex_groups.new(name="Average")
+    for verts in mesh.vertices:     #can probably be removed as well
         for i in vertexList:
             #print(i[0][0])
             if verts.index == i[0][0]:
@@ -223,27 +287,38 @@ def assignVertexWeights():
     
     bpy.ops.object.mode_set(mode = 'WEIGHT_PAINT', toggle = False)
     
+               
 
-    
-    
-print("------------------------------------------------------")   
-                        
-#assignVertexWeights()  
-
-       
+def computeAverage(iterations):  
+           
+    timeCompute = time.time() 
+    del vertexList[:]
+    del lockedList[:]
          
-'''    #maybe some helpful stuff  
+    ob = bpy.context.object
+    mesh = ob.data        
+    scene = bpy.context.scene      
+    apply_modifiers = True  
+    
+    time0 = time.time()
+    #compute weights
+    i = 0
+    max = iterations
+    for i in range(max):            
+        time0 = time.time()
+        if i == 0:             
+            populateLists(ob, mesh)                      
+        print("iterration:", i)       
+        averageWeights(ob, mesh)
+        print("iteration time:", time.time() - time0)                     
+        print("------------------") 
+                    
+        if i == max-1:
+            assignVertexWeights(ob, mesh) 
+        i = i + 1   
+        
+    print("timeCompute:", time.time() - timeCompute)       
 
-#mesuring time
-time1 = time.time()
-for x in search:
-    method1(x)
-print(time.time() - time1)
-
-wipe list with  del l[:]
-
-
-'''        
         
 #======================================================================# 
 #         GUI                                                      
@@ -251,7 +326,13 @@ wipe list with  del l[:]
 class UIElements(bpy.types.PropertyGroup):
     modifiers_enabled = bpy.props.BoolProperty(name="enable modifiers", default=False, description="apply modifiers before calculating weights", update= enableModifiers)
     selected_group = bpy.props.BoolProperty(name="selected VG only", default=True, description="only calculate weights from selected vertex group", update= selectedVG)
-    slider_iterations = bpy.props.IntProperty(name="iterations", subtype='NONE', min=1, max=1000, default=10, step=1, description="iterations")
+    vertex_distance = bpy.props.BoolProperty(name="vertex distance", default=False, description="take vertex distance into average calculation", update= vertexDistance)
+    
+    #slider_multiplier = bpy.props.IntProperty(name="weight multiplier", subtype='FACTOR', min=-1, max=1, default=1, step=0.1, description="multiplier")
+    slider_iterations = bpy.props.IntProperty(name="Iterations", subtype='FACTOR', min=1, max=1000, default=10, step=1, description="iterations")
+    slider_min = bpy.props.FloatProperty(name="min", subtype='FACTOR', min=0.0, max=1.0, default=0.0, step=0.01, description="min")
+    slider_max = bpy.props.FloatProperty(name="max", subtype='FACTOR', min=0.0, max=1.0, default=1.0, step=0.01, description="max")
+
     
     
 class OBJECT_PT_AverageWeights(bpy.types.Panel):
@@ -264,59 +345,63 @@ class OBJECT_PT_AverageWeights(bpy.types.Panel):
     
     def draw(self, context):
     
+        
         config = bpy.data.scenes[0].CONFIG_AverageWeights
-        layout = self.layout
+        layout = self.layout  
+        ob = context.object  
+        activeVG = ob.vertex_groups.active 
+        objects = bpy.context.selected_objects 
+        type = ob.type.capitalize()       
         
-        ob = bpy.context.object
-        mesh = ob.data        
-        scene = bpy.context.scene  
-        
-        activeVG = ob.vertex_groups.active
-        apply_modifiers = True        
+        #make sure a object is selected, otherwise hide settings and display warning
+        if not objects: 
+            row = layout.row()
+            row.label(text="No Active Object", icon='ERROR')
+            return      
+        if type == 'Mesh':  
+            if activeVG:      
+                row = layout.row()
+                row.label(text="Active Vertex Group: " + str(activeVG.name), icon='GROUP_VCOL')
+                        
+                col = layout.column()     
+                col.prop(config, "vertex_distance")                
+                #col.prop(config, "modifiers_enabled")
+                #col.prop(config, "selected_group") 
                 
-        split = layout.split()
-        col = split.column()
-        box = col.box()
-        box.prop(config, "modifiers_enabled")
-        box.prop(config, "selected_group")
-        box.column().prop(config, "slider_iterations")       
-        row = layout.row() 
-        row.operator("mesh.compute", text="compute")
+                '''
+                row = layout.row() 
+                row.prop(config, "slider_min")   
+                row.prop(config, "slider_max")  
+                '''
+                
+                col = layout.column()
+                #col.prop(config, "slider_multiplier")  
+                col.prop(config, "slider_iterations")   
+                    
+                row = layout.row() 
+                row.operator("mesh.compute_weights", text="Calculate")
+            else:
+                row = layout.row()
+                row.label(text="No Active Vertex Group", icon='ERROR')
+                
         
         
-        
-class OBJECT_OP_AverageCompute(bpy.types.Operator):
-    
-    bl_idname = "mesh.compute"
+class OBJECT_OP_AverageCompute(bpy.types.Operator):    
+    bl_idname = "mesh.compute_weights"
     bl_label = "compute weights"
     bl_description = "compute weights"
     
+        
     def execute(self, context):
         #get arguments from UIElemtnts
         config = bpy.data.scenes[0].CONFIG_AverageWeights
-        
-                       
-            
+        iterations = config.slider_iterations          
+        computeAverage(iterations)            
         return {'FINISHED'} 
         
-def compute():
-    
-    #compute weights
-    i = 0
-    max = 10
-    lockedList = []
-    vertexList = []  
-    for i in range(max):            
-        #time0 = time.time()
-        if i == 0:             
-            populateLists()                      
-        print("iterration:", i)
-        averageWeights()
-        #print("iteration time:", time.time() - time0)              
-        if i == max-1:
-            assignVertexWeights() 
-        i = i + 1   
-       
+        
+        
+
 #======================================================================# 
 #         register                                                      
 #======================================================================#
