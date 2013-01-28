@@ -56,7 +56,6 @@ bl_info = {
     "version": (1, 0, 4),
     "blender": (2, 6, 0),
     "category": "Import-Export",
-    "category": "kromar",
     "location": "File > Import > TetMesh",
     "description": "import TET meshes from TetraMaker (c) AGEIA (.tet)",
     "warning": '', # used for warning icon and text in addons panel

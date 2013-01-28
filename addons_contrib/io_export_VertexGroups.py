@@ -71,7 +71,6 @@ bl_info = {
     "version": (1, 2, 5),
     "blender": (2, 6, 0),
     "category": "Import-Export",
-    "category": "kromar",
     "location": "File > Export > Vertex Groups",
     "description": "exports all vertex groups to a xml file",
     "warning": '', # used for warning icon and text in addons panel
@@ -118,7 +117,7 @@ def process_mesh(object_name, filepath, export_name):
     #create document structure
     doc = Document()
     #rootElement = doc.createElement("group")
-    rootElement = doc.createElement("group")
+    rootElement = doc.createElement("virtamed")
     doc.appendChild(rootElement)
     vertGroupElem = doc.createElement("VertexLabels")
     rootElement.appendChild(vertGroupElem)
