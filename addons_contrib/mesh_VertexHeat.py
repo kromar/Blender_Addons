@@ -25,9 +25,6 @@ TODO:
         not sure what the new formula is, lets try
     - include locked vertices
     - update vertex group on each cycle?
-    - possible addon name: 
-        Heat Diffusion?
-        VertexHeat?
     
     
 # mesuring time
@@ -54,7 +51,7 @@ import mathutils
 bl_info = {
     "name": "Vertex Heat",
     "author": "Daniel Grauer",
-    "version": (1, 1, 1),
+    "version": (1, 2, 0),
     "blender": (2, 6, 5),
     "category": "Mesh",
     "location": "Properties space > Data > Vertex Heat",
@@ -69,8 +66,6 @@ print("*------------------------------------------------------------------------
 print("*                          Vertex Heat                                         *")
 print(" ") 
 
-lockedList = []
-vertexList = []  
 
 def objectApplyModifiers(scene, ob, apply_modifiers):  
     mesh = ob.data
@@ -130,31 +125,33 @@ def vertexDistance(self, context):
 '''---------------------------
 # check if vertex is in active group
 ---------------------------'''      
+        
+lockedList = []
+vertexList = []  
+
 def populateLists(ob, mesh):   
     activeVG = ob.vertex_groups.active    
     #add vertices from vertex group in our list
+    #'''
     if activeVG.name in ob.vertex_groups:                    
         #check if vertex is in our group  
-        for verts in mesh.vertices:                          
+        for verts in mesh.vertices:                                                     #WE CAN SPEED THIS UP                     
             for v in verts.groups:   #v defines the vertex of a group    
                 if v.group == activeVG.index:
                     #print("locked vert: ", verts.index)
                     vertexList.append([[verts.index], [v.weight]])
-                    lockedList.append(verts.index) 
+                    lockedList.append(verts.index)
     #print("locked verts:", lockedList)              
-
+    #'''
 
     #add all vertices to our list that are not in the vertex group with weight 0.0
     for verts in mesh.vertices:  
         #print(lockedList)      
         if not verts.index in lockedList:  
             #print("unlocked:", verts.index)          
-            vertexList.append([[verts.index], [0.0]]) 
+            vertexList.append([[verts.index], [0.0]])
     vertexList.sort()
-    '''
-    for i in vertexList:
-        print(i)
-     #'''
+    
 #we only need to run this once
 
 
@@ -162,29 +159,23 @@ def populateLists(ob, mesh):
 '''---------------------------
 # get border verts
 ---------------------------'''   
-def getBorderVerts(vertex, bm):      
-    bmvert = bm.verts[vertex] 
-    borderVerts = []  
-        
+def getBorderVerts(vertex, bm):   
+    bmvert = bm.verts[vertex]  
+    borderVerts = []          
     for edge in bmvert.link_edges:
-        vec = mathutils.Vector(bmvert.co - edge.other_vert(bmvert).co)     
-        borderVerts.append(edge.other_vert(bmvert).index)    
-    return borderVerts, len(borderVerts), vec.length
+        v = edge.other_vert(bmvert)         
+        vec = mathutils.Vector(bmvert.co - v.co)    
+        borderVerts.append(v.index)           
+    #print(bmvert.index, borderVerts
+    return borderVerts, len(borderVerts), vec.length         
 
- 
 '''---------------------------
 # avarage border verts
     here we want to average the weight of our neighbour verts
         -loop over each vert, check if it is locked in our vertexList 
         -calculate sum
         -write new value to our vertexList
-
-time mesured in this function:     (iteration time: 0.54003)
-    0.53003
-
-
 ---------------------------'''  
-
 def VertexHeat(ob, mesh): 
     #we need to be in edit mode to loop
     if not ob.mode == 'EDIT':
@@ -198,32 +189,29 @@ def VertexHeat(ob, mesh):
         vIndex = v[0][0]      
         borderVerts, count, distance = getBorderVerts(vIndex, bm)       
        
-        sumBorderWeights=0   
+        sumBorderWeights = 0   
         #add up border weights and assing to active vertex
         for i in borderVerts:
             #now add up the weights of these
             weight = vertexList[i][1][0]
             sumBorderWeights = sumBorderWeights + weight
-        
-        avg = (sumBorderWeights / count)  
+          
         #and set new weights
         if sumBorderWeights > 0:
             if not vIndex in lockedList:
-                vertexList[vIndex][1][0] = avg   
-    
-
+                avgWeight = (sumBorderWeights / count) 
+                vertexList[vIndex][1][0] = avgWeight   
+                 
 '''---------------------------
 # assign our vertex weights to a new vertex group
 ---------------------------'''  
 def assignVertexWeights(ob, mesh):   
     bpy.ops.object.mode_set(mode = 'OBJECT', toggle = False)   
-    vg = ob.vertex_groups.new(name="Heat")
-    
+    vg = ob.vertex_groups.new(name="Heat")        
     for i in vertexList:
-        vg.add(i[0], i[1][0], 'ADD')   # LIST, weight, arg
-    
+        vg.add(i[0], i[1][0], 'ADD')   # LIST, weight, arg    
     bpy.ops.object.mode_set(mode = 'WEIGHT_PAINT', toggle = False)
-    
+   
                
 
 def computeHeat(iterations):  
@@ -244,14 +232,17 @@ def computeHeat(iterations):
     for i in range(max):            
         time0 = time.time()
         if i == 0:             
-            populateLists(ob, mesh)                      
+            populateLists(ob, mesh)      
+                            
         print("iterration:", i)       
         VertexHeat(ob, mesh)
+        #assignVertexWeights(ob, mesh) 
         print("iteration time:", time.time() - time0)                     
-        print("------------------") 
+        #print("------------------") 
         
         if i == max-1:
             assignVertexWeights(ob, mesh) 
+            pass
         i = i + 1   
         
     print("timeCompute:", time.time() - timeCompute)       
@@ -266,7 +257,7 @@ class UIElements(bpy.types.PropertyGroup):
     vertex_distance = bpy.props.BoolProperty(name="vertex distance", default=False, description="take vertex distance into heat calculation", update= vertexDistance)
     
     #slider_multiplier = bpy.props.IntProperty(name="weight multiplier", subtype='FACTOR', min=-1, max=1, default=1, step=0.1, description="multiplier")
-    slider_iterations = bpy.props.IntProperty(name="Iterations", subtype='FACTOR', min=1, max=1000, default=10, step=1, description="iterations")
+    slider_iterations = bpy.props.IntProperty(name="Iterations", subtype='FACTOR', min=1, max=10000, default=1, step=1, description="iterations")
     slider_min = bpy.props.FloatProperty(name="min", subtype='FACTOR', min=0.0, max=1.0, default=0.0, step=0.01, description="min")
     slider_max = bpy.props.FloatProperty(name="max", subtype='FACTOR', min=0.0, max=1.0, default=1.0, step=0.01, description="max")
 
