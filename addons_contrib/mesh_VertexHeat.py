@@ -54,7 +54,7 @@ import mathutils
 bl_info = {
     "name": "Vertex Heat",
     "author": "Daniel Grauer",
-    "version": (1, 1, 0),
+    "version": (1, 1, 1),
     "blender": (2, 6, 5),
     "category": "Mesh",
     "location": "Properties space > Data > Vertex Heat",
@@ -166,9 +166,9 @@ def getBorderVerts(vertex, bm):
     bmvert = bm.verts[vertex] 
     borderVerts = []  
         
-    for loop in bmvert.link_loops:
-        vec = mathutils.Vector(bmvert.co - loop.edge.other_vert(bmvert).co)     
-        borderVerts.append(loop.edge.other_vert(bmvert).index)    
+    for edge in bmvert.link_edges:
+        vec = mathutils.Vector(bmvert.co - edge.other_vert(bmvert).co)     
+        borderVerts.append(edge.other_vert(bmvert).index)    
     return borderVerts, len(borderVerts), vec.length
 
  
