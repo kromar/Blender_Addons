@@ -52,22 +52,21 @@ import mathutils
  
 #addon description
 bl_info = {
-    "name": "Average Vertex Weights",
+    "name": "Vertex Heat",
     "author": "Daniel Grauer",
     "version": (1, 1, 0),
     "blender": (2, 6, 5),
     "category": "Mesh",
-    "category": "kromar",
-    "location": "Properties space > Data > Average Vertex Weights",
+    "location": "Properties space > Data > Vertex Heat",
     "description": "test",
     "warning": '', # used for warning icon and text in addons panel
-    "wiki_url": "",
-    "tracker_url": "",
+    "wiki_url": "http://en.wikipedia.org/wiki/Heat_diffusion",
+    "tracker_url": "https://github.com/kromar/Blender_Addons/blob/master/addons_contrib/mesh_VertexHeat.py",
 }
 
 print(" ")
 print("*------------------------------------------------------------------------------*")
-print("*                          Average Weights                                     *")
+print("*                          Vertex Heat                                         *")
 print(" ") 
 
 lockedList = []
@@ -91,7 +90,7 @@ def objectApplyModifiers(scene, ob, apply_modifiers):
 '''---------------------------'''  
 def selectedVG(self, context):
     mesh =  bpy.context.active_object.data 
-    config = bpy.data.scenes[0].CONFIG_AverageWeights
+    config = bpy.data.scenes[0].CONFIG_VertexHeat
     print("selected group: ", config.selected_group)
    
     if config.selected_group == True:
@@ -103,7 +102,7 @@ def selectedVG(self, context):
 '''---------------------------'''  
 def enableModifiers(self, context):
     mesh =  bpy.context.active_object.data 
-    config = bpy.data.scenes[0].CONFIG_AverageWeights
+    config = bpy.data.scenes[0].CONFIG_VertexHeat
     print("modifier enabled: ", config.modifiers_enabled)
     
     #enable debug mode, show indices
@@ -117,7 +116,7 @@ def enableModifiers(self, context):
 '''---------------------------'''  
 def vertexDistance(self, context):
     mesh =  bpy.context.active_object.data 
-    config = bpy.data.scenes[0].CONFIG_AverageWeights
+    config = bpy.data.scenes[0].CONFIG_VertexHeat
     print("vertexDistance enabled: ", config.vertex_distance)
     
     #enable debug mode, show indices
@@ -186,7 +185,7 @@ time mesured in this function:     (iteration time: 0.54003)
 
 ---------------------------'''  
 
-def averageWeights(ob, mesh): 
+def VertexHeat(ob, mesh): 
     #we need to be in edit mode to loop
     if not ob.mode == 'EDIT':
         bpy.ops.object.mode_set(mode = 'EDIT', toggle = False)
@@ -218,7 +217,7 @@ def averageWeights(ob, mesh):
 ---------------------------'''  
 def assignVertexWeights(ob, mesh):   
     bpy.ops.object.mode_set(mode = 'OBJECT', toggle = False)   
-    vg = ob.vertex_groups.new(name="Average")
+    vg = ob.vertex_groups.new(name="Heat")
     
     for i in vertexList:
         vg.add(i[0], i[1][0], 'ADD')   # LIST, weight, arg
@@ -227,7 +226,7 @@ def assignVertexWeights(ob, mesh):
     
                
 
-def computeAverage(iterations):  
+def computeHeat(iterations):  
            
     timeCompute = time.time() 
     del vertexList[:]
@@ -247,7 +246,7 @@ def computeAverage(iterations):
         if i == 0:             
             populateLists(ob, mesh)                      
         print("iterration:", i)       
-        averageWeights(ob, mesh)
+        VertexHeat(ob, mesh)
         print("iteration time:", time.time() - time0)                     
         print("------------------") 
         
@@ -264,7 +263,7 @@ def computeAverage(iterations):
 class UIElements(bpy.types.PropertyGroup):
     modifiers_enabled = bpy.props.BoolProperty(name="enable modifiers", default=False, description="apply modifiers before calculating weights", update= enableModifiers)
     selected_group = bpy.props.BoolProperty(name="selected VG only", default=True, description="only calculate weights from selected vertex group", update= selectedVG)
-    vertex_distance = bpy.props.BoolProperty(name="vertex distance", default=False, description="take vertex distance into average calculation", update= vertexDistance)
+    vertex_distance = bpy.props.BoolProperty(name="vertex distance", default=False, description="take vertex distance into heat calculation", update= vertexDistance)
     
     #slider_multiplier = bpy.props.IntProperty(name="weight multiplier", subtype='FACTOR', min=-1, max=1, default=1, step=0.1, description="multiplier")
     slider_iterations = bpy.props.IntProperty(name="Iterations", subtype='FACTOR', min=1, max=1000, default=10, step=1, description="iterations")
@@ -273,16 +272,16 @@ class UIElements(bpy.types.PropertyGroup):
 
     
     
-class OBJECT_PT_AverageWeights(bpy.types.Panel):
-    bl_label = "AverageWeights"
-    bl_idname = "OBJECT_PT_AverageWeights"
+class OBJECT_PT_VertexHeat(bpy.types.Panel):
+    bl_label = "VertexHeat"
+    bl_idname = "OBJECT_PT_VertexHeat"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "data"
     bl_default_closed = True
     
     def draw(self, context):        
-        config = bpy.data.scenes[0].CONFIG_AverageWeights
+        config = bpy.data.scenes[0].CONFIG_VertexHeat
         layout = self.layout  
         ob = context.object  
         activeVG = ob.vertex_groups.active 
@@ -322,7 +321,7 @@ class OBJECT_PT_AverageWeights(bpy.types.Panel):
                 
         
         
-class OBJECT_OP_AverageCompute(bpy.types.Operator):    
+class OBJECT_OP_HeatCompute(bpy.types.Operator):    
     bl_idname = "mesh.compute_weights"
     bl_label = "compute weights"
     bl_description = "compute weights"
@@ -330,9 +329,9 @@ class OBJECT_OP_AverageCompute(bpy.types.Operator):
         
     def execute(self, context):
         #get arguments from UIElemtnts
-        config = bpy.data.scenes[0].CONFIG_AverageWeights
+        config = bpy.data.scenes[0].CONFIG_VertexHeat
         iterations = config.slider_iterations          
-        computeAverage(iterations)            
+        computeHeat(iterations)            
         return {'FINISHED'} 
         
         
@@ -343,16 +342,16 @@ class OBJECT_OP_AverageCompute(bpy.types.Operator):
 #======================================================================#
 def register():
     bpy.utils.register_module(__name__)
-    bpy.types.Scene.CONFIG_AverageWeights = bpy.props.PointerProperty(type = UIElements)
+    bpy.types.Scene.CONFIG_VertexHeat = bpy.props.PointerProperty(type = UIElements)
 
     
 def unregister():
     bpy.utils.unregister_module(__name__)
 
-    if bpy.context.scene.get('CONFIG_AverageWeights') != None:
-        del bpy.context.scene['CONFIG_AverageWeights']
+    if bpy.context.scene.get('CONFIG_VertexHeat') != None:
+        del bpy.context.scene['CONFIG_VertexHeat']
     try:
-        del bpy.types.Scene.CONFIG_AverageWeights
+        del bpy.types.Scene.CONFIG_VertexHeat
     except:
         pass 
         
