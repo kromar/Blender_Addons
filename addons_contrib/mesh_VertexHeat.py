@@ -21,10 +21,10 @@
 
 '''---------------------------
 TODO:
-    - include vertex distance to equation
-        not sure what the new formula is, lets try
+    - add distance influence value 
+        multiplier so edge length has more impact on weight
+    
     - include locked vertices
-    - update vertex group on each cycle?
     
     
 # mesuring time
@@ -50,14 +50,14 @@ import mathutils
 #addon description
 bl_info = {
     "name": "Vertex Heat",
-    "author": "Daniel Grauer",
-    "version": (1, 2, 0),
+    "author": "Daniel Grauer (kromar)",
+    "version": (1, 2, 1),
     "blender": (2, 6, 5),
     "category": "Mesh",
-    "location": "Properties space > Data > Vertex Heat",
-    "description": "test",
+    "location": "Properties space > Object Data > Vertex Heat",
+    "description": "vertex weight heat diffusion",
     "warning": '', # used for warning icon and text in addons panel
-    "wiki_url": "http://en.wikipedia.org/wiki/Heat_diffusion",
+    "wiki_url": "",
     "tracker_url": "https://github.com/kromar/Blender_Addons/blob/master/addons_contrib/mesh_VertexHeat.py",
 }
 
@@ -65,6 +65,148 @@ print(" ")
 print("*------------------------------------------------------------------------------*")
 print("*                          Vertex Heat                                         *")
 print(" ") 
+
+    
+activeList = []    
+lockedList = []
+vertexList = []  
+
+#[0]=index, [1]=weight, [2]=borderverts, [3]=borderDistance
+'''---------------------------''' 
+def populateLists(ob, mesh):   
+    #write distanced and border verts to list
+    if not ob.mode == 'EDIT':
+        bpy.ops.object.mode_set(mode = 'EDIT', toggle = False)
+        print("set to edit mode for bmesh looping")  
+        
+        
+        
+    activeVG = ob.vertex_groups.active    
+    #add vertices from vertex group in our list
+    #'''
+    if activeVG.name in ob.vertex_groups:                    
+        #check if vertex is in our group  
+        for verts in mesh.vertices:                                                     #WE CAN SPEED THIS UP                     
+            for v in verts.groups:   #v defines the vertex of a group    
+                if v.group == activeVG.index:
+                    #print("locked vert: ", verts.index)
+                    vertexList.append([[verts.index],[v.weight]])           #[0]=index, [1]=weight
+                    lockedList.append(verts.index)
+    #print("locked verts:", lockedList)              
+    #'''
+
+    #add all vertices to our list that are not in the vertex group with weight 0.0
+    for verts in mesh.vertices:  
+        #print(lockedList)      
+        if not verts.index in lockedList:  
+            #print("unlocked:", verts.index)          
+            vertexList.append([[verts.index], [0.0]])                       #[0]=index, [1]=weight
+    vertexList.sort()
+    
+    bm = bmesh.from_edit_mesh(mesh)        
+    
+    for bmvert in bm.verts:    
+        borderVerts = []  
+        borderDistance = []        
+        sumDistance = 0
+        #add neighbours and distances to vertex list as sublist of vertex
+        for edge in bmvert.link_edges:
+            vertex = edge.other_vert(bmvert)         
+            vec = mathutils.Vector(bmvert.co - vertex.co)   
+            vDistance = vec.length 
+            sumDistance = sumDistance + (1/vDistance)
+            borderVerts.append(vertex.index)                  
+            borderDistance.append(1/vDistance)                
+        
+        i=0
+        for distance in borderDistance:   
+            influence = 1 / distance * len(borderVerts)
+            borderDistance[i] = distance / sumDistance   
+            print(distance, influence)
+            i = i + 1  
+        
+        vertexList[bmvert.index].append(borderVerts)            #[2]=borderverts
+        vertexList[bmvert.index].append(borderDistance)         #[3]=borderDistance  
+       
+    
+    '''
+    
+    #copy to active list and remove locked entries    
+    print("activeList:", activeList)
+    for i in vertexList:
+        activeList.append(i)
+   
+    for v in activeList:
+        #print(v)    
+        if v[0][0] in lockedList:
+            del activeList[v[0][0]]
+            
+    print("list after removal: ", len(lockedList), len(vertexList), len(activeList))
+    '''
+        
+   
+'''---------------------------'''              
+def VertexHeat(ob, mesh):  
+    for v in vertexList:
+        vIndex = v[0][0]
+        avgWeight = 0          
+        if not vIndex in lockedList:        ##this causes lsow down when lockedList gets to big
+            i = 0
+            for distance in v[3]:
+                weight = vertexList[v[2][i]][1][0]
+                avgWeight = avgWeight + distance * weight
+                i = i + 1
+            #activeList[vIndex][1][0] = avgWeight 
+            vertexList[vIndex][1][0] = avgWeight
+            
+            
+
+'''---------------------------''' 
+def assignVertexWeights(ob, mesh):   
+    bpy.ops.object.mode_set(mode = 'OBJECT', toggle = False)   
+    vg = ob.vertex_groups.new(name="Heat")        
+    for i in vertexList:
+        vg.add(i[0], i[1][0], 'ADD')   # LIST, weight, arg    
+    bpy.ops.object.mode_set(mode = 'WEIGHT_PAINT', toggle = False)
+   
+               
+
+'''---------------------------''' 
+def computeHeat(iterations):
+           
+    timeCompute = time.time() 
+    del vertexList[:]
+    del lockedList[:]
+    del activeList[:]
+         
+    ob = bpy.context.object
+    mesh = ob.data        
+    scene = bpy.context.scene      
+    apply_modifiers = True  
+    
+    #compute weights
+    i = 0
+    max = iterations
+    populateLists(ob, mesh) 
+    
+    for i in range(max):            
+        time0 = time.time()
+        print("iterration:", i)       
+        VertexHeat(ob, mesh)
+        print("iteration time:", time.time() - time0)                     
+        print("------------------------------------") 
+        
+        if i == max-1:
+            assignVertexWeights(ob, mesh)
+            pass
+        i = i + 1   
+        
+    print("timeCompute:", time.time() - timeCompute)       
+
+        
+#======================================================================# 
+#         GUI                                                      
+#======================================================================#     
 
 
 def objectApplyModifiers(scene, ob, apply_modifiers):  
@@ -119,150 +261,21 @@ def vertexDistance(self, context):
     if config.vertex_distance == True:
         mesh.vertex_distance = True
     else:
-        mesh.vertex_distance = False   
-    
-                
-'''---------------------------
-# check if vertex is in active group
----------------------------'''      
-        
-lockedList = []
-vertexList = []  
-
-def populateLists(ob, mesh):   
-    activeVG = ob.vertex_groups.active    
-    #add vertices from vertex group in our list
-    #'''
-    if activeVG.name in ob.vertex_groups:                    
-        #check if vertex is in our group  
-        for verts in mesh.vertices:                                                     #WE CAN SPEED THIS UP                     
-            for v in verts.groups:   #v defines the vertex of a group    
-                if v.group == activeVG.index:
-                    #print("locked vert: ", verts.index)
-                    vertexList.append([[verts.index], [v.weight]])
-                    lockedList.append(verts.index)
-    #print("locked verts:", lockedList)              
-    #'''
-
-    #add all vertices to our list that are not in the vertex group with weight 0.0
-    for verts in mesh.vertices:  
-        #print(lockedList)      
-        if not verts.index in lockedList:  
-            #print("unlocked:", verts.index)          
-            vertexList.append([[verts.index], [0.0]])
-    vertexList.sort()
-    
-#we only need to run this once
-
-
-
-'''---------------------------
-# get border verts
----------------------------'''   
-def getBorderVerts(vertex, bm):   
-    bmvert = bm.verts[vertex]  
-    borderVerts = []          
-    for edge in bmvert.link_edges:
-        v = edge.other_vert(bmvert)         
-        vec = mathutils.Vector(bmvert.co - v.co)    
-        borderVerts.append(v.index)           
-    #print(bmvert.index, borderVerts
-    return borderVerts, len(borderVerts), vec.length         
-
-'''---------------------------
-# avarage border verts
-    here we want to average the weight of our neighbour verts
-        -loop over each vert, check if it is locked in our vertexList 
-        -calculate sum
-        -write new value to our vertexList
----------------------------'''  
-def VertexHeat(ob, mesh): 
-    #we need to be in edit mode to loop
-    if not ob.mode == 'EDIT':
-        bpy.ops.object.mode_set(mode = 'EDIT', toggle = False)
-        print("set to edit mode for bmesh looping")        
-       
-    bm = bmesh.from_edit_mesh(mesh)    
-                
-    for v in vertexList:    #we go through all the vertices? do we need this? exclude locked?
-        #get those neighbour vertices  
-        vIndex = v[0][0]      
-        borderVerts, count, distance = getBorderVerts(vIndex, bm)       
-       
-        sumBorderWeights = 0   
-        #add up border weights and assing to active vertex
-        for i in borderVerts:
-            #now add up the weights of these
-            weight = vertexList[i][1][0]
-            sumBorderWeights = sumBorderWeights + weight
-          
-        #and set new weights
-        if sumBorderWeights > 0:
-            if not vIndex in lockedList:
-                avgWeight = (sumBorderWeights / count) 
-                vertexList[vIndex][1][0] = avgWeight   
-                 
-'''---------------------------
-# assign our vertex weights to a new vertex group
----------------------------'''  
-def assignVertexWeights(ob, mesh):   
-    bpy.ops.object.mode_set(mode = 'OBJECT', toggle = False)   
-    vg = ob.vertex_groups.new(name="Heat")        
-    for i in vertexList:
-        vg.add(i[0], i[1][0], 'ADD')   # LIST, weight, arg    
-    bpy.ops.object.mode_set(mode = 'WEIGHT_PAINT', toggle = False)
-   
-               
-
-def computeHeat(iterations):  
-           
-    timeCompute = time.time() 
-    del vertexList[:]
-    del lockedList[:]
-         
-    ob = bpy.context.object
-    mesh = ob.data        
-    scene = bpy.context.scene      
-    apply_modifiers = True  
-    
-    time0 = time.time()
-    #compute weights
-    i = 0
-    max = iterations
-    for i in range(max):            
-        time0 = time.time()
-        if i == 0:             
-            populateLists(ob, mesh)      
-                            
-        print("iterration:", i)       
-        VertexHeat(ob, mesh)
-        #assignVertexWeights(ob, mesh) 
-        print("iteration time:", time.time() - time0)                     
-        #print("------------------") 
-        
-        if i == max-1:
-            assignVertexWeights(ob, mesh) 
-            pass
-        i = i + 1   
-        
-    print("timeCompute:", time.time() - timeCompute)       
-
-        
-#======================================================================# 
-#         GUI                                                      
-#======================================================================#        
+        mesh.vertex_distance = False  
+     
+'''---------------------------'''    
 class UIElements(bpy.types.PropertyGroup):
     modifiers_enabled = bpy.props.BoolProperty(name="enable modifiers", default=False, description="apply modifiers before calculating weights", update= enableModifiers)
     selected_group = bpy.props.BoolProperty(name="selected VG only", default=True, description="only calculate weights from selected vertex group", update= selectedVG)
     vertex_distance = bpy.props.BoolProperty(name="vertex distance", default=False, description="take vertex distance into heat calculation", update= vertexDistance)
     
     #slider_multiplier = bpy.props.IntProperty(name="weight multiplier", subtype='FACTOR', min=-1, max=1, default=1, step=0.1, description="multiplier")
-    slider_iterations = bpy.props.IntProperty(name="Iterations", subtype='FACTOR', min=1, max=10000, default=1, step=1, description="iterations")
+    slider_iterations = bpy.props.IntProperty(name="Iterations", subtype='FACTOR', min=1, max=100000, default=10, step=1, description="iterations")
     slider_min = bpy.props.FloatProperty(name="min", subtype='FACTOR', min=0.0, max=1.0, default=0.0, step=0.01, description="min")
     slider_max = bpy.props.FloatProperty(name="max", subtype='FACTOR', min=0.0, max=1.0, default=1.0, step=0.01, description="max")
 
-    
-    
+
+'''---------------------------'''    
 class OBJECT_PT_VertexHeat(bpy.types.Panel):
     bl_label = "VertexHeat"
     bl_idname = "OBJECT_PT_VertexHeat"
@@ -310,8 +323,8 @@ class OBJECT_PT_VertexHeat(bpy.types.Panel):
                 row = layout.row()
                 row.label(text="No Active Vertex Group", icon='ERROR')
                 
-        
-        
+
+'''---------------------------'''       
 class OBJECT_OP_HeatCompute(bpy.types.Operator):    
     bl_idname = "mesh.compute_weights"
     bl_label = "compute weights"
