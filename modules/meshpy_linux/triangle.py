@@ -18,18 +18,9 @@ class MeshInfo(internals.MeshInfo, MeshInfoBase):
             ]
 
     def __getstate__(self):
-        def dump_array(array):
-            try:
-                return [
-                    [array[i,j] for j in range(array.unit)]
-                    for i in range(len(array))]
-            except RuntimeError:
-                # not allocated
-                return None
-
         return self.number_of_point_attributes, \
                self.number_of_element_attributes, \
-               [(name, dump_array(getattr(self, name))) for name in self._constituents]
+               [(name, getattr(self, name)) for name in self._constituents]
 
     def __setstate__(self, xxx_todo_changeme):
         (p_attr_count, e_attr_count, state) = xxx_todo_changeme
@@ -137,7 +128,8 @@ def subdivide_facets(subdivisions, points, facets, facet_markers=None):
 def build(mesh_info, verbose=False, refinement_func=None, attributes=False,
         volume_constraints=False, max_volume=None, allow_boundary_steiner=True,
         allow_volume_steiner=True, quality_meshing=True,
-        generate_edges=None, generate_faces=False, min_angle=None):
+        generate_edges=None, generate_faces=False, min_angle=None,
+        mesh_order=None):
     """Triangulate the domain given in `mesh_info'."""
     opts = "pzj"
     if quality_meshing:
@@ -145,6 +137,9 @@ def build(mesh_info, verbose=False, refinement_func=None, attributes=False,
             opts += "q%f" % min_angle
         else:
             opts += "q"
+
+    if mesh_order is not None:
+        opts += "o%d" % mesh_order
 
     if verbose:
         opts += "VV"
@@ -159,7 +154,7 @@ def build(mesh_info, verbose=False, refinement_func=None, attributes=False,
         if max_volume:
             raise ValueError("cannot specify both volume_constraints and max_area")
     elif max_volume:
-        opts += "a%s" % repr(max_volume)
+        opts += "a%.20f" % max_volume
 
     if refinement_func is not None:
         opts += "u"
@@ -184,7 +179,7 @@ def build(mesh_info, verbose=False, refinement_func=None, attributes=False,
     # restore "C" locale--otherwise triangle might mis-parse stuff like "a0.01"
     try:
         import locale
-    except ImportErorr:
+    except ImportError:
         have_locale = False
     else:
         have_locale = True
@@ -204,8 +199,15 @@ def build(mesh_info, verbose=False, refinement_func=None, attributes=False,
 
 
 
-def refine(input_p, verbose=False, refinement_func=None):
+def refine(input_p, verbose=False, refinement_func=None,  quality_meshing=True, min_angle=None):
     opts = "razj"
+
+    if quality_meshing:
+        if min_angle is not None:
+            opts += "q%f" % min_angle
+        else:
+            opts += "q"
+
     if len(input_p.faces) != 0:
         opts += "p"
     if verbose:
@@ -214,6 +216,7 @@ def refine(input_p, verbose=False, refinement_func=None):
         opts += "Q"
     if refinement_func is not None:
         opts += "u"
+
     output_p = MeshInfo()
     internals.triangulate(opts, input_p, output_p, MeshInfo(), refinement_func)
     return output_p

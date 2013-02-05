@@ -197,4 +197,162 @@ def toMesh():
         #bpy.ops.mesh.delete()
 
 toMesh()
+
+
+
+
+
+
+
+
+
 #-----------------------------------------#
+
+
+
+
+#-----------------------------------------#
+#   do some simple tests in 2d environment
+#-----------------------------------------#
+'''
+1. get border region
+
+2. place random vertices inside border
+
+3. connect verts and try to generate "nice" triangles
+
+'''
+
+#-----------------------------------------#
+#   write base mesh into borderlist for now; will expand this whenever needed
+#-----------------------------------------#
+
+
+border = []
+def calculateBorder():
+    global border
+    for vert in me.vertices:
+        border.append([vert.co[0],vert.co[1], vert.co[2]])
+
+    print("----------------------------")
+    print(border) 
+    
+   
+
+
+
+#-----------------------------------------#
+#   lets create some random vertices
+#-----------------------------------------#
+
+#add them to the existing border list and generate a new mesh? 
+#that way we might already get around nasty border calculations?
+
+
+def generateMesh(verts):
+
+    bpy.ops.object.mode_set(mode = 'OBJECT', toggle = False)
+    
+    mesh_data = bpy.data.meshes.new("mesh_data") 
+    mesh_data.from_pydata(verts, [], [])  
+    mesh_data.update()#calc_edges=True) #not needed here 
+    
+    new_mesh = bpy.data.objects.new("triangle", mesh_data)  
+    bpy.context.scene.objects.link(new_mesh)  
+    
+    #make new mesh active and selected; deselect old mesh
+    print(new_mesh.name)
+    ob.select = False   
+    new_mesh.select = True   
+    bpy.context.scene.objects.active = new_mesh
+    
+    #reset vertex selections on new mesh (probably not needed
+    bpy.ops.object.mode_set(mode = 'EDIT', toggle = False)
+    bpy.ops.mesh.reveal()
+    bpy.ops.mesh.select_all(action='DESELECT')   
+     
+
+triangles = []
+  
+def generatePoints():
+    
+
+    if ob.name!='triangle':
+        global triangles
+        i=0
+        vertcount = 20
+        min,max = 0,2
+        while i < vertcount:
+            randX = random.uniform(min,max)-max*0.5
+            randY = random.uniform(min,max)-max*0.5
+            randZ = 0
+            
+            triangles.append([randX,randY,randZ])
+            #print(i, ": ", randX,randY,randZ)
+            i+=1   
+            
+        generateMesh(triangles)
+    
+    
+    
+    bpy.ops.object.mode_set(mode = 'OBJECT', toggle = False)
+    i = 0
+    n = 1
+    points = len(ob.data.vertices)
+    print(points)
+    while i <= points:
+        for v in ob.data.vertices:
+            index = v.index
+            
+            if index==i:
+                print(index)
+                x1, y1, z1 = v.co[0], v.co[1], v.co[2]
+                v.select = True
+            
+            if index==i+n:  
+                print(index)          
+                x2, y2, z2 = v.co[0], v.co[1], v.co[2]
+                v.select = True
+        
+        lx = math.pow((x1-x2),2)
+        ly = math.pow((y1-y2),2)
+        lz = math.pow((z1-z2),2)
+           
+        radius = math.sqrt(lx+ly+lz)
+        
+        print("distance: ", radius)
+        bpy.ops.object.mode_set(mode = 'EDIT', toggle = False)
+        
+        
+        bpy.ops.mesh.edge_face_add()  
+        
+        bpy.ops.mesh.reveal()
+        bpy.ops.mesh.select_all(action='DESELECT')  
+        bpy.ops.object.mode_set(mode = 'OBJECT', toggle = False)
+        
+        i+=1
+        
+    
+#calculateBorder()  
+#generatePoints()
+ 
+#-----------------------------------------#
+#calculate distances to near vertices 
+#-----------------------------------------#
+ 
+#check distances between verts starting by first index
+
+#print("testing", triangles)
+#print("listsize: ", len(triangles))
+#index = len(triangles)-1
+
+
+#radius = x1-x2   
+#print("radius: ",radius) 
+#bpy.ops.mesh.edge_face_add()    
+
+
+# if no vert in range, increase radius till we get 2
+# on match generate edges/face on 3 verts
+# check child verts with same radius to find verts in range 
+ 
