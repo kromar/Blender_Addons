@@ -55,10 +55,11 @@ from xml.dom.minidom import Document
 #addon description
 bl_info = {
     "name": "Export: MedialAxis",
-    "author": "Daniel Grauer",
+    "author": "Daniel Grauer (kromar)",
     "version": (1, 0, 4),
     "blender": (2, 6, 0),
     "category": "Import-Export",
+    "category": "kromar",
     "location": "File > Export > MedialAxis",
     "description": "export medial axis (.xml)",
     "warning": '', # used for warning icon and text in addons panel
@@ -112,7 +113,7 @@ def process_mesh(object_name, filepath, sim_type, export_name):
     #create document structure
     doc = Document()
     
-    rootElement = doc.createElement("group")
+    rootElement = doc.createElement("virtamed")
     doc.appendChild(rootElement)
     
     PathElem = doc.createElement("MedialAxis")
@@ -299,4 +300,28 @@ def hystsim_content(self, context):
         self.layout.operator(HystsimMedialAxisExporter.bl_idname, text="MedialAxis (.xml) - single object").filepath = export_name
     
     #multiple selected
-    elif len(bpy55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55AA55A
+    elif len(bpy.context.selected_objects) > 1:
+        export_name = "" 
+        self.layout.operator(HystsimMedialAxisExporter.bl_idname, text="MedialAxis (.xml) - multiple objects").filepath = export_name
+
+# ----------------------------------------------------------------------------#        
+        
+def register():
+    bpy.utils.register_module(__name__)
+    bpy.types.INFO_MT_file_export.append(Export_Menu)
+    bpy.types.OBJECT_MT_arthros.append(arthros_content)
+    bpy.types.OBJECT_MT_hystsim.append(hystsim_content)
+    
+def unregister():
+    bpy.utils.unregister_module(__name__)
+    #bpy.types.INFO_MT_file_export.remove(Export_Menu)
+    bpy.types.OBJECT_MT_arthros.remove(arthros_content)
+    bpy.types.OBJECT_MT_hystsim.remove(hystsim_content)
+
+if __name__ == "__main__":
+    register()
+    
+print(" ")
+print("*                             initialized                                      *")
+print("*------------------------------------------------------------------------------*")
+print(" ")

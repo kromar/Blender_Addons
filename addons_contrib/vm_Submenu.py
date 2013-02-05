@@ -41,7 +41,7 @@ from bpy.props import *
 #addon description
 bl_info = {
     "name": "Export: Submenu",
-    "author": "Daniel Grauer",
+    "author": "Daniel Grauer (kromar)",
     "version": (1, 0, 0),
     "blender": (2, 6, 0),
     "category": "Import-Export",

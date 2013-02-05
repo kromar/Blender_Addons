@@ -51,9 +51,10 @@ import mathutils
 bl_info = {
     "name": "Vertex Heat",
     "author": "Daniel Grauer (kromar)",
-    "version": (1, 2, 1),
+    "version": (1, 2, 2),
     "blender": (2, 6, 5),
     "category": "Mesh",
+    "category": "kromar",
     "location": "Properties space > Object Data > Vertex Heat",
     "description": "vertex weight heat diffusion",
     "warning": '', # used for warning icon and text in addons panel
@@ -120,9 +121,9 @@ def populateLists(ob, mesh):
         
         i=0
         for distance in borderDistance:   
-            influence = 1 / distance * len(borderVerts)
+            #influence = 1 / distance * len(borderVerts)
             borderDistance[i] = distance / sumDistance   
-            print(distance, influence)
+            #print(distance, influence)
             i = i + 1  
         
         vertexList[bmvert.index].append(borderVerts)            #[2]=borderverts
@@ -187,7 +188,9 @@ def computeHeat(iterations):
     #compute weights
     i = 0
     max = iterations
+    bpy.ops.wm.modal_timer_operator()
     populateLists(ob, mesh) 
+    
     
     for i in range(max):            
         time0 = time.time()
@@ -227,7 +230,7 @@ def objectApplyModifiers(scene, ob, apply_modifiers):
 '''---------------------------'''  
 def selectedVG(self, context):
     mesh =  bpy.context.active_object.data 
-    config = bpy.data.scenes[0].CONFIG_VertexHeat
+    config = bpy.context.scene.CONFIG_VertexHeat
     print("selected group: ", config.selected_group)
    
     if config.selected_group == True:
@@ -239,7 +242,7 @@ def selectedVG(self, context):
 '''---------------------------'''  
 def enableModifiers(self, context):
     mesh =  bpy.context.active_object.data 
-    config = bpy.data.scenes[0].CONFIG_VertexHeat
+    config = bpy.context.scene.CONFIG_VertexHeat
     print("modifier enabled: ", config.modifiers_enabled)
     
     #enable debug mode, show indices
@@ -253,7 +256,7 @@ def enableModifiers(self, context):
 '''---------------------------'''  
 def vertexDistance(self, context):
     mesh =  bpy.context.active_object.data 
-    config = bpy.data.scenes[0].CONFIG_VertexHeat
+    config = bpy.context.scene.CONFIG_VertexHeat
     print("vertexDistance enabled: ", config.vertex_distance)
     
     #enable debug mode, show indices
@@ -274,6 +277,8 @@ class UIElements(bpy.types.PropertyGroup):
     slider_min = bpy.props.FloatProperty(name="min", subtype='FACTOR', min=0.0, max=1.0, default=0.0, step=0.01, description="min")
     slider_max = bpy.props.FloatProperty(name="max", subtype='FACTOR', min=0.0, max=1.0, default=1.0, step=0.01, description="max")
 
+    slider_progress = bpy.props.IntProperty(name="progress", subtype='PERCENTAGE', min=0, max=100, default=0, step=1, description="iteration progress")
+ 
 
 '''---------------------------'''    
 class OBJECT_PT_VertexHeat(bpy.types.Panel):
@@ -285,43 +290,46 @@ class OBJECT_PT_VertexHeat(bpy.types.Panel):
     bl_default_closed = True
     
     def draw(self, context):        
-        config = bpy.data.scenes[0].CONFIG_VertexHeat
+        config = bpy.context.scene.CONFIG_VertexHeat
         layout = self.layout  
-        ob = context.object  
+        ob = context.object
         activeVG = ob.vertex_groups.active 
         objects = bpy.context.selected_objects 
         type = ob.type.capitalize()       
         
-        #make sure a object is selected, otherwise hide settings and display warning
-        if not objects: 
-            row = layout.row()
-            row.label(text="No Active Object", icon='ERROR')
-            return      
+        #make sure a object is selected, otherwise hide settings and display warning           
         if type == 'Mesh':  
-            if activeVG:      
+            if not objects: 
                 row = layout.row()
-                row.label(text="Active Vertex Group: " + str(activeVG.name), icon='GROUP_VCOL')
-                        
-                col = layout.column()     
-                col.prop(config, "vertex_distance")                
-                #col.prop(config, "modifiers_enabled")
-                #col.prop(config, "selected_group") 
-                
-                '''
-                row = layout.row() 
-                row.prop(config, "slider_min")   
-                row.prop(config, "slider_max")  
-                '''
-                
-                col = layout.column()
-                #col.prop(config, "slider_multiplier")  
-                col.prop(config, "slider_iterations")   
-                    
-                row = layout.row() 
-                row.operator("mesh.compute_weights", text="Calculate")
+                row.label(text="No Active Object", icon='ERROR') 
+        
             else:
-                row = layout.row()
-                row.label(text="No Active Vertex Group", icon='ERROR')
+                if activeVG:      
+                    row = layout.row()
+                    row.label(text="Active Vertex Group: " + str(activeVG.name), icon='GROUP_VCOL')
+                            
+                    row.prop(config, "slider_progress")
+                    #col = layout.column()     
+                    #col.prop(config, "vertex_distance")                
+                    #col.prop(config, "modifiers_enabled")
+                    #col.prop(config, "selected_group") 
+                    
+                    '''
+                    row = layout.row() 
+                    row.prop(config, "slider_min")   
+                    row.prop(config, "slider_max")  
+                    '''
+                    
+                    col = layout.column()
+                    #col.prop(config, "slider_multiplier")  
+                    col.prop(config, "slider_iterations")   
+                        
+                    row = layout.row() 
+                    row.operator("mesh.compute_weights", text="Calculate")
+                    
+                else:
+                    row = layout.row()
+                    row.label(text="No Active Vertex Group", icon='ERROR')
                 
 
 '''---------------------------'''       
@@ -333,13 +341,45 @@ class OBJECT_OP_HeatCompute(bpy.types.Operator):
         
     def execute(self, context):
         #get arguments from UIElemtnts
-        config = bpy.data.scenes[0].CONFIG_VertexHeat
-        iterations = config.slider_iterations          
+        config = bpy.context.scene.CONFIG_VertexHeat
+        iterations = config.slider_iterations 
+                 
         computeHeat(iterations)            
         return {'FINISHED'} 
         
         
-        
+'''---------------------------''' 
+class ModalTimerOperator(bpy.types.Operator):
+    """Operator which runs its self from a timer"""
+    bl_idname = "wm.modal_timer_operator"
+    bl_label = "Modal Timer Operator"
+
+    _timer = None
+
+    def modal(self, context, event):
+        if event.type == 'ESC':
+            return self.cancel(context)
+
+        if event.type == 'TIMER':
+            # change theme color, silly!
+            config = bpy.context.scene.CONFIG_VertexHeat
+            config.slider_progress +=1
+            #context.scene.slider += 1
+            for area in context.screen.areas:
+                if area.type == 'PROPERTIES':
+                    area.tag_redraw()
+            
+
+        return {'PASS_THROUGH'}
+
+    def execute(self, context):
+        self._timer = context.window_manager.event_timer_add(0.1, context.window)
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+
+    def cancel(self, context):
+        context.window_manager.event_timer_remove(self._timer)
+        return {'CANCELLED'}        
 
 #======================================================================# 
 #         register                                                      

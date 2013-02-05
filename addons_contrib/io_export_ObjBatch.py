@@ -80,7 +80,7 @@ from bpy.props import *
 #addon description
 bl_info = {
     "name": "Export: ObjBatch",
-    "author": "Daniel Grauer",
+    "author": "Daniel Grauer (kromar)",
     "version": (1, 0, 8),
     "blender": (2, 6, 3),
     "category": "Import-Export",

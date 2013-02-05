@@ -68,10 +68,11 @@ from bpy.props import *
 #addon description
 bl_info = {
     "name": "Export: TetMesh",
-    "author": "Daniel Grauer",
+    "author": "Daniel Grauer (kromar)",
     "version": (1, 1, 0),
     "blender": (2, 6, 3),
     "category": "Import-Export",
+    "category": "kromar",
     "location": "File > Export > TetMesh",
     "description": "export meshes to TET file format for TetraMaker (c) AGEIA (.tet)",
     "warning": '', # used for warning icon and text in addons panel

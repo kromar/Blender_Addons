@@ -150,15 +150,16 @@ from meshpy.tet import MeshInfo, build, Options
 bl_info = {
     "name": "MeshPy",
     "author": "Daniel Grauer (kromar)",
-    "version": (1, 1, 0),
-    "blender": (2, 6, 3),
+    "version": (1, 2, 0),
+    "blender": (2, 6, 5),
     "category": "Mesh",
     "category": "kromar",
     "location": "Properties space > Data > MeshPy",
     "description": "Quality triangular and tetrahedral mesh generation",
     "warning": "MeshPy modules are required!", # used for warning icon and text in addons panel
     "wiki_url": "",
-    "tracker_url": ""}
+    "tracker_url": "",
+    "resource_url": "http://www.lfd.uci.edu/~gohlke/pythonlibs/#meshpy"}
 
     
 #======================================================================# 
@@ -176,7 +177,10 @@ tetras = 0
 debug = False
 
 def generate_Preview():
-    config = bpy.data.scenes[0].CONFIG_MeshPy
+        
+    bpy.ops.object.mode_set(mode = 'OBJECT', toggle = False)  
+    
+    config = bpy.context.scene.CONFIG_MeshPy
     
     vertList = []
     faceList = []
@@ -184,8 +188,6 @@ def generate_Preview():
     meshFacets = []
     split_faceList = []
     split_vertList = []
-        
-    bpy.ops.object.mode_set(mode = 'OBJECT', toggle = False)  
     ob = bpy.context.active_object
     obname = ob.name
     
@@ -225,7 +227,12 @@ def generate_Preview():
         
             
 def generate_TetMesh():
-    config = bpy.data.scenes[0].CONFIG_MeshPy
+    
+    bpy.ops.object.mode_set(mode = 'OBJECT', toggle = False) 
+    bpy.context.scene.update()  
+    print("Scene Updated!")
+    
+    config = bpy.context.scene.CONFIG_MeshPy
     tetIndex = 0
     vertList = []
     faceList = []
@@ -233,10 +240,6 @@ def generate_TetMesh():
     meshFacets = []
     split_faceList = []
     split_vertList = []
-    
-    bpy.ops.object.mode_set(mode = 'OBJECT', toggle = False) 
-    bpy.context.scene.update()  
-    print("Scene Updated!")
     
     ob = bpy.context.active_object
     obname = ob.name
@@ -300,11 +303,11 @@ def generate_TetMesh():
     else:
         #create mesh
         tetname = obname + "Tet"  
-        tet = create_mesh(tetname, vertList, faceList)
+        tetMesh = create_mesh(tetname, vertList, faceList)
         #run configs
-        enable_game(config, tet)
-        enable_physics(config, tet, tetname)
-        world_correction(config, ob, tet)  
+        enable_game(config, tetMesh)
+        enable_physics(config, tetMesh, tetname)
+        world_correction(config, ob, tetMesh)  
        
         
         
@@ -314,13 +317,14 @@ def create_mesh(name, vertList, faceList):
     me.validate(verbose = debug) 
     me.update()
     me.update(calc_edges = True)
-    tet = bpy.data.objects.new(name, me)
-    bpy.context.scene.objects.link(tet)
+    tetMesh = bpy.data.objects.new(name, me)
+    bpy.context.scene.objects.link(tetMesh)    
+    bpy.context.scene.update() 
     
-    #object display settings
-    tet.data.show_all_edges = True
-    tet.show_wire = True   
-    return(tet)
+    #object display settings    
+    tetMesh.show_all_edges = True
+    tetMesh.show_wire = True   
+    return(tetMesh)
 
 
     
@@ -475,7 +479,7 @@ def reset_Mesh():
 #      update slicer                                                  
 #======================================================================#   
 def update_Slicer(self, context):
-    config = bpy.data.scenes[0].CONFIG_MeshPy
+    config = bpy.context.scene.CONFIG_MeshPy
     
     #slice distance based on slider percentages
     ##actions performed when in object mode
@@ -624,7 +628,7 @@ class OBJECT_PT_MeshPy(bpy.types.Panel):
     
     def draw(self, context):
     
-        config = bpy.data.scenes[0].CONFIG_MeshPy
+        config = bpy.context.scene.CONFIG_MeshPy
         layout = self.layout
         ob = context.object
         type = ob.type.capitalize()
@@ -724,7 +728,7 @@ class OBJECT_OP_MeshPy_TetGen(bpy.types.Operator):
     bl_description = "generates tetmesh"
             
     def execute(self, context):
-        config = bpy.data.scenes[0].CONFIG_MeshPy
+        config = bpy.context.scene.CONFIG_MeshPy
         generate_TetMesh()
         return {'FINISHED'}
  
@@ -734,7 +738,7 @@ class OBJECT_OP_MeshPy_Preview(bpy.types.Operator):
     bl_description = "generates preview"
             
     def execute(self, context):
-        config = bpy.data.scenes[0].CONFIG_MeshPy
+        config = bpy.context.scene.CONFIG_MeshPy
         generate_Preview()
         return {'FINISHED'} 
         
@@ -748,7 +752,7 @@ class OBJECT_OP_MeshSlicer_Reset(bpy.types.Operator):
           
         
     def execute(self, context):
-        config = bpy.data.scenes[0].CONFIG_MeshPy
+        config = bpy.context.scene.CONFIG_MeshPy
         reset_Mesh()
         return {'FINISHED'}
             

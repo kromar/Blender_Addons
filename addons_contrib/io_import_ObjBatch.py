@@ -36,7 +36,7 @@ from bpy.props import *
 #addon description
 bl_info = {
 	"name": "import Wavefront OBJ Batch",
-	"author": "Daniel Grauer",
+	"author": "Daniel Grauer (kromar)",
 	"version": (1, 0, 0),
 	"blender": (2, 6, 4),
 	"category": "Import-Export",

@@ -102,7 +102,7 @@ def IM_select(indexList,type):
 
 def IM_show_extra_indices(self, context):
     mesh =  bpy.context.active_object.data 
-    config = bpy.data.scenes[0].CONFIG_IndexMarker
+    config = bpy.context.scene.CONFIG_IndexMarker
     print("Show indices: ", config.show_extra_indices)
     
     #enable debug mode, show indices
@@ -120,7 +120,7 @@ def IM_show_extra_indices(self, context):
 #======================================================================#        
 class UIElements(bpy.types.PropertyGroup):
 
-    get_indices = bpy.props.StringProperty(name="index:", description="input vertex, face or edge indices here for selection. example: 1,2,3")
+    get_indices = bpy.props.StringProperty(name="Index", description="input vertex, face or edge indices here for selection. example: 1,2,3")
     show_extra_indices = bpy.props.BoolProperty(name="Show selected indices", default=False, description="Display the index numbers of selected vertices, edges, and faces. Note: enables debug mode", update=IM_show_extra_indices)
 
 
@@ -134,7 +134,7 @@ class OBJECT_PT_IndexMarker(bpy.types.Panel):
     
     def draw(self, context):
     
-        config = bpy.data.scenes[0].CONFIG_IndexMarker
+        config = bpy.context.scene.CONFIG_IndexMarker
         layout = self.layout
         ob = context.object
         type = ob.type.capitalize()
@@ -142,19 +142,19 @@ class OBJECT_PT_IndexMarker(bpy.types.Panel):
         game = ob.game
         
         #make sure a object is selected, otherwise hide settings and display warning
-        if not objects: 
-            row = layout.row()
-            row.label(text="No Active Object", icon='ERROR')
-            return      
         if type == 'Mesh':
-            row = layout.column()            
-            row.prop(config, "show_extra_indices")
-            row.prop(config, "get_indices")
-            
-            row = layout.row() 
-            row.operator("mesh.vertex_select", text="vertices")
-            row.operator("mesh.face_select", text="faces")
-            row.operator("mesh.edge_select", text="edges")
+            if not objects: 
+                row = layout.row()
+                row.label(text="No Active Object", icon='ERROR')
+            else:
+                row = layout.column()            
+                row.prop(config, "show_extra_indices")
+                row.prop(config, "get_indices")
+                
+                row = layout.row() 
+                row.operator("mesh.vertex_select", text="vertices")
+                row.operator("mesh.face_select", text="faces")
+                row.operator("mesh.edge_select", text="edges")
 
 
 #======================================================================# 
@@ -169,7 +169,7 @@ class OBJECT_OP_SelectVertices(bpy.types.Operator):
             
     def execute(self, context):
         #get arguments from UIElemtnts
-        config = bpy.data.scenes[0].CONFIG_IndexMarker
+        config = bpy.context.scene.CONFIG_IndexMarker
         
         #lets convert the values to int and pass the list to the select function
         indexList=[]
@@ -193,7 +193,7 @@ class OBJECT_OP_SelectFaces(bpy.types.Operator):
             
     def execute(self, context):
         #get arguments from UIElemtnts
-        config = bpy.data.scenes[0].CONFIG_IndexMarker
+        config = bpy.context.scene.CONFIG_IndexMarker
         
         #lets convert the values to int and pass the list to the select function
         indexList=[]
@@ -217,7 +217,7 @@ class OBJECT_OP_SelectEdges(bpy.types.Operator):
             
     def execute(self, context):
         #get arguments from UIElemtnts
-        config = bpy.data.scenes[0].CONFIG_IndexMarker
+        config = bpy.context.scene.CONFIG_IndexMarker
         
         #lets convert the values to int and pass the list to the select function
         indexList=[]
