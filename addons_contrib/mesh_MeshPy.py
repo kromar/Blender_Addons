@@ -1,20 +1,22 @@
-﻿# ***** BEGIN GPL LICENSE BLOCK *****
+﻿# ##### BEGIN GPL LICENSE BLOCK #####
 #
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
-# of the License, or (at your option) any later version.
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU General Public License
+#  as published by the Free Software Foundation; either version 2
+#  of the License, or (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software Foundation,
-# Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software Foundation,
+#  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
-# ***** END GPL LICENCE BLOCK *****
+# ##### END GPL LICENSE BLOCK #####
+
+# <pep8-80 compliant>
 
 #======================================================================# 
 #                                                              
@@ -26,7 +28,7 @@
 # thanks to scorpin81 (irc#pythonblender) for linux lib compiling
 
 #======================================================================# 
-#    todo:                                                          
+#    TODO:                                                          
 #======================================================================#
 '''
 
@@ -64,7 +66,7 @@ switches
     '-CC', TetGen also checks constrained Delaunay (for -p switch) or conforming Delaunay (for -q, -a, or -i) property for the mesh.
     - h switch for help output
 - multiple intersecting meshes causes crash
-- modifing a mesh crashes blender; find reason
+- modifying a mesh crashes blender; find reason
 - convert quality value to percentage, at the moment its inversed logic which is not user friendly
 
 - monkey can not be generated, find reason
@@ -84,6 +86,10 @@ MeshSlicer:
 #     changelog                                                         
 #======================================================================#
 '''
+v 1.21
+    - API update for show_all_edges
+    
+    
 "version": (1, 0, 0)
     -turned into addon
     - removed double function callable
@@ -147,11 +153,12 @@ import math
 import mathutils
 from meshpy.tet import MeshInfo, build, Options
 
+
 bl_info = {
     "name": "MeshPy",
     "author": "Daniel Grauer (kromar)",
-    "version": (1, 2, 0),
-    "blender": (2, 6, 5),
+    "version": (1, 2, 1),
+    "blender": (2, 6, 6),
     "category": "Mesh",
     "category": "kromar",
     "location": "Properties space > Data > MeshPy",
@@ -312,6 +319,7 @@ def generate_TetMesh():
         
         
 def create_mesh(name, vertList, faceList):
+    #TODO: use bm = bmesh.new() bm.from_mesh(mesh)? 
     me = bpy.data.meshes.new(name)
     me.from_pydata(vertList, [], faceList)
     me.validate(verbose = debug) 
@@ -374,15 +382,15 @@ def compute_mesh_split(tetmesh, split_faceList, split_vertList, vertList):
 
         
 #using polygones instead of faces for bmesh
-def compute_faces(ob, list):
+def compute_faces(ob, meshFacets):
     for p in ob.data.polygons:
-        list.append(p.vertices[:])
+        meshFacets.append(p.vertices[:])
     
     if debug == True:
-        print("meshFacets: ", list)    
+        print("meshFacets: ", meshFacets)    
     
  
-def compute_vertices(ob, list):
+def compute_vertices(ob, meshPoints):
     for v in ob.data.vertices:
         vx, vy, vz = v.co[0] * ob.scale[0], v.co[1] * ob.scale[1], v.co[2] * ob.scale[2]
         #print("vcor: ", vx, vy, vz)
@@ -395,9 +403,9 @@ def compute_vertices(ob, list):
         ox, oy, oz = px + vx, py + vy, pz + vz
         #print("wcor: ", "[", ox, oy, oz, "]")
         
-        list.append([ox, oy, oz])
+        meshPoints.append([ox, oy, oz])
     if debug == True:
-        print("meshPoints: ", list)
+        print("meshPoints: ", meshPoints)
  
  
 def world_correction(config, ob, tet):
@@ -495,7 +503,7 @@ def update_Slicer(self, context):
     #get slice dimensions
     dX, dY, dZ = ob.dimensions[0], ob.dimensions[1], ob.dimensions[2]
     #enable dsiplay settings
-    bpy.context.object.data.show_all_edges = True
+    ob.show_all_edges = True
     
     #vector from pivot to corner
     #0 & 6 are needed for slice position

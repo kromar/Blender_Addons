@@ -1,22 +1,22 @@
-# ***** BEGIN GPL LICENSE BLOCK *****
+# ##### BEGIN GPL LICENSE BLOCK #####
 #
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
-# of the License, or (at your option) any later version.
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU General Public License
+#  as published by the Free Software Foundation; either version 2
+#  of the License, or (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software Foundation,
-# Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software Foundation,
+#  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #
-# ***** END GPL LICENCE BLOCK *****
+# ##### END GPL LICENSE BLOCK #####
 
-# ----------------------------------------------------------------------------#    
+# <pep8-80 compliant>
 
 """
 todo:
@@ -44,20 +44,14 @@ import bpy
 bl_info = {
     "name": "Index Marker",
     "author": "Daniel Grauer (kromar)",
-    "version": (1, 1, 2),
+    "version": (1, 1, 3),
     "blender": (2, 6, 3),
     "category": "Mesh",
-    "category": "kromar",
     "location": "Properties space > Data > Index Marker",
     "description": "select vertices, faces and edges by index numbers",
     "warning": "", # used for warning icon and text in addons panel
     "wiki_url": "",
     "tracker_url": ""}
-
-print(" ")
-print("*------------------------------------------------------------------------------*")
-print("*                          IndexMarker                      *")
-print(" ")
 
 
 def IM_select(indexList,type):
@@ -70,7 +64,7 @@ def IM_select(indexList,type):
    
     if type == 'vertex':
         bpy.context.scene.tool_settings.mesh_select_mode = (True, False, False)    
-        for vert in mesh.vertices:
+        for vert in mesh.vertices:      #TODO: use if in instead for to speed up a bit
             #print(vert.index)
             for target in indexList:
                 if vert.index == target:
@@ -251,8 +245,3 @@ def unregister():
         del bpy.types.Scene.CONFIG_IndexMarker
     except:
         pass
-
-print(" ")
-print("*                             initialized                                      *")
-print("*------------------------------------------------------------------------------*")
-print(" ")  
