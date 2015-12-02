@@ -41,8 +41,8 @@ filename_ext = ".xml"
 bl_info = {
     "name": "Export: Vertex Groups",
     "author": "Daniel Grauer (kromar)",
-    "version": (1, 2, 8),
-    "blender": (2, 6, 9),
+    "version": (1, 2, 9),
+    "blender": (2, 7, 5),
     "category": "Import-Export",
     "category": "VirtaMed",
     "location": "File > Export > Vertex Groups",
@@ -55,13 +55,13 @@ bl_info = {
 print(80 * "-")
 print("initializing VertexGroup export")
 
-def save_VertexGroup(filepath, amount):
+def save_VertexGroup(filepath, amount, min_weight):
     selected_objects = bpy.context.selected_objects
     for object in selected_objects:
         object_name = object.name
         export_name = object.name + "Labels.xml"
 
-        export_VertexGroup(object_name, filepath, amount, export_name)
+        export_VertexGroup(object_name, filepath, amount, export_name, min_weight)
 
         print(export_name + " EXPORTED ")
         print(80 * "-")
@@ -69,16 +69,16 @@ def save_VertexGroup(filepath, amount):
 # ----------------------------------------------------------------------------#
 
 # objects can be passed to this function
-def export_VertexGroup(object_name, filepath, amount, export_name):
-
+def export_VertexGroup(object_name, filepath, amount, export_name, min_weight):
+   
     if amount == 1:
-        process_mesh(object_name, filepath, export_name)
+        process_mesh(object_name, filepath, export_name, min_weight)
     else:
         filepath = filepath + export_name
-        process_mesh(object_name, filepath, export_name)
+        process_mesh(object_name, filepath, export_name, min_weight)
 
 
-def process_mesh(object_name, filepath, export_name):
+def process_mesh(object_name, filepath, export_name, min_weight):
     object = bpy.data.objects[object_name]
     # apply modifiers to object data
     scene = bpy.context.scene
@@ -120,7 +120,7 @@ def process_mesh(object_name, filepath, export_name):
 
                 # exclude empty groups
                 # # compare vertex group index with group index
-                if g.weight > 0.0 and g.group == group.index:
+                if g.weight > min_weight and g.group == group.index:
                     verticesText += repr(vert.index) + " "
                     weightText += repr(g.weight) + " "
                     vertCount += 1
@@ -188,20 +188,30 @@ class VertexGroupExporter(bpy.types.Operator, ExportHelper):
                               maxlen=1024,
                               options={'ANIMATABLE'},
                               subtype='NONE')
+    
+    min_weight = bpy.props.FloatProperty(name = "Minimum Weight",
+                              description = "set the minimum vertex weight that gets exported",
+                              default = 0.0,
+                              min = 0.0,
+                              max = 1.0,
+                              step = 1,
+                              precision = 4,
+                              )
+        
 
     check_extension = True
     
     def execute(self, context):
         # #save_VertexGroup(self.properties.filepath)
-
+        min_weight = self.min_weight
         # single selected
         if len(bpy.context.selected_objects) == 1:
-            save_VertexGroup(self.properties.filepath, 1)
+            save_VertexGroup(self.properties.filepath, 1, min_weight)
             return {'FINISHED'}
 
         # multiple selected
         elif len(bpy.context.selected_objects) > 1:
-            save_VertexGroup(self.properties.filepath, 2)
+            save_VertexGroup(self.properties.filepath, 2, min_weight)
             return {'FINISHED'}
 
     '''
