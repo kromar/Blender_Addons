@@ -41,7 +41,6 @@ bl_info = {
     "version": (1, 3, 0),
     "blender": (2, 6, 7),
     "category": "Mesh",
-    "category": "kromar",
     "location": "Properties space > Data > MeshPy",
     "description": "Quality triangular and tetrahedral mesh generation",
     "warning": "MeshPy modules are required!",    # used for warning icon and text in addons panel
@@ -50,13 +49,14 @@ bl_info = {
     "resource_url": "http://www.lfd.uci.edu/~gohlke/pythonlibs/#meshpy"
     }
     
+    
 if "bpy" in locals():
     import importlib
-    importlib.reload(mesh_Meshpy)
+    importlib.reload(MeshPy)
 else:
-    from . import mesh_Meshpy
+    from . import MeshPy
 
-import bpy
+    import bpy
 
 
 def register():
