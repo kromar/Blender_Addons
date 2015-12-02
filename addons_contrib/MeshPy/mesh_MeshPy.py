@@ -19,23 +19,6 @@
 # <pep8-80 compliant>
 
 
-#======================================================================#
-#      ***** Credits *****
-#======================================================================#
-'''
-#
-# thanks to Andreas Klöckner for MeshPy
-#   http://mathema.tician.de/software/meshpy
-
-# thanks to scorpin81 (irc#pythonblender) for linux lib compiling
-'''
-
-#======================================================================#
-# binary downloads
-#======================================================================#
-'''
-    http://www.lfd.uci.edu/~gohlke/pythonlibs/
-'''
 
 #======================================================================#
 # TODO: main tasks
@@ -96,33 +79,6 @@ MeshSlicer:
     we have to switch back and forth to modes for every update.....
 '''
 
-
-#======================================================================#
-#
-#======================================================================#
-from meshpy.tet import MeshInfo, build, Options
-import bmesh
-import bpy
-import math
-import mathutils
-
-
-bl_info = {
-    "name": "MeshPy",
-    "author": "Daniel Grauer (kromar)",
-    "version": (1, 3, 0),
-    "blender": (2, 6, 7),
-    "category": "Mesh",
-    "category": "kromar",
-    "location": "Properties space > Data > MeshPy",
-    "description": "Quality triangular and tetrahedral mesh generation",
-    "warning": "MeshPy modules are required!",    # used for warning icon and text in addons panel
-    "wiki_url": "",
-    "tracker_url": "",
-    "resource_url": "http://www.lfd.uci.edu/~gohlke/pythonlibs/#meshpy"
-    }
-
-
 #======================================================================#
 #  args
 #======================================================================#
@@ -169,19 +125,21 @@ bl_info = {
 
 
 '''
-#======================================================================#
-#   generate mesh
-#======================================================================#
+from meshpy.tet import MeshInfo, build, Options
+import bmesh
+import bpy
+import math
+import mathutils
+
 
 tetras = 0
 debug = False
 
-def generate_Preview():
 
+def generate_Preview():
     # toggle OBJECT mode
     if bpy.ops.object.mode_set.poll():
         bpy.ops.object.mode_set(mode = 'OBJECT', toggle = False)
-
 
     config = bpy.context.scene.CONFIG_MeshPy
 
@@ -226,8 +184,8 @@ def generate_Preview():
     #compute_mesh(tetmesh, vertList, faceList)
     '''
 
+    
 def generate_TetMesh_BAK():
-
     # toggle OBJECT mode
     if bpy.ops.object.mode_set.poll():
         bpy.ops.object.mode_set(mode = 'OBJECT', toggle = False)
@@ -300,10 +258,8 @@ def generate_TetMesh_BAK():
             world_correction(config, ob, tetMesh)
 
 
-#-----------------------------------------------------------------------------
 
 def generate_TetMesh():
-
     # toggle OBJECT mode
     if bpy.ops.object.mode_set.poll():
         bpy.ops.object.mode_set(mode = 'OBJECT', toggle = False)
@@ -353,8 +309,8 @@ def generate_TetMesh():
         # print("here we create the new mesh")
         tetMesh = create_mesh(tetname, vertList, faceList)
 
-#-----------------------------------------------------------------------------
 
+        
 def create_mesh(name, vertList, faceList):
     # TODO: use bm = bmesh.new() bm.from_mesh(mesh)?
     # # maybe use to_mesh?
@@ -523,104 +479,6 @@ def reset_Mesh():
     bpy.ops.object.mode_set(mode = 'OBJECT', toggle = False)
 
 
-#======================================================================#
-#  update slicer
-#======================================================================#
-def update_Slicer(self, context):
-    config = bpy.context.scene.CONFIG_MeshPy
-
-    # slice distance based on slider percentages
-    # #actions performed when in object mode
-    ob = bpy.context.active_object
-    obname = ob.name
-    if ob.mode == 'OBJECT':
-        # apply rotation and scale
-        applyScale = config.apply_scale
-        applyRrotation = config.apply_rotation
-        # print("Scale: ", applyScale, "Rotation: ", applyRrotation)
-        bpy.ops.object.transform_apply(location = False, rotation = applyRrotation, scale = applyScale)
-
-    # get slice dimensions
-    dX, dY, dZ = ob.dimensions[0], ob.dimensions[1], ob.dimensions[2]
-    # enable dsiplay settings
-    ob.show_all_edges = True
-
-    # vector from pivot to corner
-    # 0 & 6 are needed for slice position
-    bx0, by0, bz0 = ob.bound_box[0][0], ob.bound_box[0][1], ob.bound_box[0][2]
-    bx6, by6, bz6 = ob.bound_box[6][0], ob.bound_box[6][1], ob.bound_box[6][2]
-    # print("bbox: ", bx, by, bz)
-
-    # vector to pivot
-    ox, oy, oz = ob.location[0], ob.location[1], ob.location[2]
-    # print("pcor: " , ox,oy,oz)
-
-    # world location of bounding box corner
-    wx0, wy0, wz0 = bx0 + ox, by0 + oy, bz0 + oz
-    wx6, wy6, wz6 = bx6 + ox, by6 + oy, bz6 + oz
-    # print("Rcor: ", wx, wy, wz)
-
-    # calculate new slice positions
-    xSlice0 = dX * 0.01 * config.ratio_xSlice0
-    ySlice0 = dY * 0.01 * config.ratio_ySlice0
-    zSlice0 = dZ * 0.01 * config.ratio_zSlice0
-    # print("slice result: ", xSlice0, ySlice0, zSlice0)
-
-    xSlice6 = dX * 0.01 * config.ratio_xSlice6
-    ySlice6 = dY * 0.01 * config.ratio_ySlice6
-    zSlice6 = dZ * 0.01 * config.ratio_zSlice6
-    # print("slice result: ", xSlice6, ySlice6, zSlice6)
-
-    slice_Mesh(ob, obname, xSlice0, ySlice0, zSlice0, xSlice6, ySlice6, zSlice6, wx0, wy0, wz0, wx6, wy6, wz6)
-
-
-#======================================================================#
-#   Slice mesh
-#======================================================================#
-def slice_Mesh(ob, obname, xSlice0, ySlice0, zSlice0, xSlice6, ySlice6, zSlice6, wx0, wy0, wz0, wx6, wy6, wz6):
-
-    reset_Mesh()
-
-    for vert in ob.data.vertices:
-        index = vert.index
-        # vertex coordinates
-        vx, vy, vz = vert.co[0], vert.co[1], vert.co[2]
-        # print("vcor: ", vx, vy, vz)
-
-        # get origin location
-        px, py, pz = ob.location[0], ob.location[1], ob.location[2]
-        # print("ocor: ", px, py, pz)
-
-        # world location
-        ox, oy, oz = px + vx, py + vy, pz + vz
-        # print("wcor: ", ox, oy, oz)
-
-        # when vertex coordinate is bigger than slice position then select them to hide
-        if ox < wx0 + xSlice0:
-            # print(index, "ox: ", ox, ":", wx0+xSlice0)
-            vert.select = True
-        if oy < wy0 + ySlice0:
-            # print(index, "vy: ",vy)
-            vert.select = True
-        if oz < wz0 + zSlice0:
-            # print(index, "vz: ",vz)
-            vert.select = True
-        if ox > wx6 - xSlice6:
-            # print(index, "vx: ",vx)
-            vert.select = True
-        if oy > wy6 - ySlice6:
-            # print(index, "vy: ",vy)
-            vert.select = True
-        if oz > wz6 - zSlice6:
-            # print(index, "vz: ",vz)
-            vert.select = True
-
-    bpy.ops.object.mode_set(mode = 'EDIT', toggle = False)
-    bpy.context.scene.tool_settings.mesh_select_mode = (True, False, False)
-
-    # hide selected
-    bpy.ops.mesh.hide(unselected = False)
-
 
 #======================================================================#
 #     GUI
@@ -683,64 +541,8 @@ class UIElements(bpy.types.PropertyGroup):
                                           items=itemlist,
                                           default='5')
 
-    # mesh slicer checkboxes
-    apply_scale = bpy.props.BoolProperty(name="Apply scale",
-                                         default=True,
-                                         description="apply scale to object before slicing")
-    
-    apply_rotation = bpy.props.BoolProperty(name="Apply rotation",
-                                            default=False,
-                                            description="apply rotation to object before slicing")
-    # mesh slicer sliders
-    ratio_xSlice0 = bpy.props.FloatProperty(name="+ X ",
-                                            subtype='PERCENTAGE',
-                                            min=0,
-                                            max=100,
-                                            default=0,
-                                            description="+ X axis slicer",
-                                            update=update_Slicer)
-    
-    ratio_ySlice0 = bpy.props.FloatProperty(name="+ Y ",
-                                            subtype='PERCENTAGE',
-                                            min=0,
-                                            max=100,
-                                            default=0,
-                                            description="+ Y axis slicer",
-                                            update=update_Slicer)
-    
-    ratio_zSlice0 = bpy.props.FloatProperty(name="+ Z ",
-                                            subtype='PERCENTAGE',
-                                            min=0,
-                                            max=100,
-                                            default=0,
-                                            description="+ Z axis slicer",
-                                            update=update_Slicer)
-    
-    ratio_xSlice6 = bpy.props.FloatProperty(name="- X ",
-                                            subtype='PERCENTAGE',
-                                            min=0,
-                                            max=100,
-                                            default=0,
-                                            description="- X axis slicer",
-                                            update=update_Slicer)
-    
-    ratio_ySlice6 = bpy.props.FloatProperty(name="- Y ",
-                                            subtype='PERCENTAGE',
-                                            min=0,
-                                            max=100,
-                                            default=0,
-                                            description="- Y axis slicer",
-                                            update=update_Slicer)
-    
-    ratio_zSlice6 = bpy.props.FloatProperty(name="- Z ",
-                                            subtype='PERCENTAGE',
-                                            min=0,
-                                            max=100,
-                                            default=0,
-                                            description="- Z axis slicer",
-                                            update=update_Slicer)
-
-
+                                          
+                                          
 class OBJECT_PT_MeshPy(bpy.types.Panel):
     bl_label = "MeshPy"
     bl_idname = "OBJECT_PT_MeshPy"
@@ -764,10 +566,7 @@ class OBJECT_PT_MeshPy(bpy.types.Panel):
             return
 
         if ob_type == 'Mesh':
-            #=====================================#
-            #   tetgen
-            #=====================================#
-
+        
             row = layout.row()
             row.label(text = "TetGen", icon = 'MESH_ICOSPHERE')
 
@@ -800,42 +599,7 @@ class OBJECT_PT_MeshPy(bpy.types.Panel):
             row.operator("mesh.meshpy_preview", text = "Generate Preview")
             row.label(text = "tetras: " + str(tetras))
             col.operator("mesh.meshpy_tetgen", text = "Generate Tetmesh")
-
-
-            #=====================================#
-            #     mesh slicer
-            #=====================================#
-            # checkboxes
-            row = layout.row()
-            row = layout.row()
-            row.label(text = "Mesh Slicer", icon = 'EDITMODE_HLT')
-
-            split = layout.split()
-            # col = split.column().box()
-            col = split.column()
-            row = col.row()
-            row.prop(config, "apply_scale")
-            row.prop(config, "apply_rotation")
-
-            # slice sliders
-            split = layout.split()
-            col = split.column().box()
-            col.column().prop(config, "ratio_xSlice0")
-            col.column().prop(config, "ratio_ySlice0")
-            col.column().prop(config, "ratio_zSlice0")
-
-            col = split.column().box()
-            col.column().prop(config, "ratio_xSlice6")
-            col.column().prop(config, "ratio_ySlice6")
-            col.column().prop(config, "ratio_zSlice6")
-
-            # slice button
-            # row = layout.row().box()
-            # row.operator("mesh.mesh_slicer", text="Update Mesh")
-
-            # reset button
-            row.operator("mesh.mesh_slicer_reset", text = "Reset Mesh")
-
+          
         else:
             row = layout.row()
             row.label(text = "Object is no mesh", icon = 'ERROR')
@@ -864,43 +628,3 @@ class OBJECT_OP_MeshPy_Preview(bpy.types.Operator):
         config = bpy.context.scene.CONFIG_MeshPy
         generate_Preview()
         return {'FINISHED'}
-
-#======================================================================#
-#   mesh reset button
-#======================================================================#
-class OBJECT_OP_MeshSlicer_Reset(bpy.types.Operator):
-    bl_idname = "mesh.mesh_slicer_reset"
-    bl_label = "reset mesh"
-    bl_description = "resets mesh"
-
-
-    def execute(self, context):
-        config = bpy.context.scene.CONFIG_MeshPy
-        reset_Mesh()
-        return {'FINISHED'}
-
-#======================================================================#
-#     register
-#======================================================================#
-def register():
-    bpy.utils.register_module(__name__)
-    bpy.types.Scene.CONFIG_MeshPy = bpy.props.PointerProperty(type = UIElements)
-
-
-def unregister():
-    bpy.utils.unregister_module(__name__)
-    if bpy.context.scene.get('CONFIG_MeshPy') != None:
-        del bpy.context.scene['CONFIG_MeshPy']
-    try:
-        del bpy.types.Scene.CONFIG_MeshPy
-    except:
-        pass
-
-
-if __name__ == "__main__":
-    register()
-
-print(" ")
-print("*                             initialized                                      *")
-print("*------------------------------------------------------------------------------*")
-print(" ")
