@@ -52,28 +52,33 @@ bl_info = {
     
 if "bpy" in locals():
     import importlib
-    importlib.reload(MeshPy)
+    if "meshpy" in locals():
+        importlib.reload(MeshPy)
 else:
-    from . import MeshPy
-
-    import bpy
+    from MeshPy import *
+    
+import bpy
 
 
 def register():
     bpy.utils.register_module(__name__)
-    bpy.types.Scene.CONFIG_MeshPy = bpy.props.PointerProperty(type = UIElements)
+    bpy.utils.register_class(MeshPy.UIElements)
+    #bpy.utils.register_module(__name__)
+    #bpy.types.Scene.CONFIG_MeshPy = bpy.props.PointerProperty(type = UIElements)
     #bpy.types.Scene.CONFIG_MeshSlicer = bpy.props.PointerProperty(type = UIElements)
 
 
 def unregister():
     bpy.utils.unregister_module(__name__)
+    bpy.utils.unregister_class(UIElements)
+    '''
     if bpy.context.scene.get('CONFIG_MeshPy') != None:
         del bpy.context.scene['CONFIG_MeshPy']
     try:
         del bpy.types.Scene.CONFIG_MeshPy
     except:
         pass
-
+    '''
 
 if __name__ == "__main__":
     register()

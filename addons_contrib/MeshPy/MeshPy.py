@@ -125,7 +125,7 @@ MeshSlicer:
 
 
 '''
-from meshpy.tet import MeshInfo, build, Options
+from meshpy_windows.meshpy.tet import MeshInfo, build, Options
 import bmesh
 import bpy
 import math
@@ -134,7 +134,6 @@ import mathutils
 
 tetras = 0
 debug = False
-
 
 def generate_Preview():
     # toggle OBJECT mode
